@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: Formatierung prüfen
+        run: swift format lint --strict --recursive Sources Tests Package.swift scripts/make-icon.swift
+      - name: Bauen
+        run: swift build
+      - name: Testen
+        run: swift test
+      - name: App-Bundle bauen (ad hoc signiert)
+        run: bash scripts/build-app.sh

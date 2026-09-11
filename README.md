@@ -47,6 +47,8 @@ open outputs/SnapPile.app
 
 Render-Tests legen Vergleichsbilder unter `$TMPDIR/SnapPileTests` ab, nicht im Repository.
 
+Die Formatierung ist in `.swift-format` festgelegt. Vor einem Commit `swift format --in-place --recursive Sources Tests Package.swift scripts/make-icon.swift` ausführen. Die CI unter `.github/workflows/ci.yml` prüft bei jedem Push Formatierung, Build, Tests und das ad hoc signierte App-Bundle.
+
 Der lokale Build erzeugt eine App für die Architektur des ausführenden Macs. Ohne gesetztes `SNAPPILE_SIGNING_IDENTITY` wird genau eine gültige Identität vom Typ `Developer ID Application:` automatisch verwendet. Gibt es mehrere passende Identitäten, bricht der Build mit einer Aufforderung zur expliziten Auswahl ab. Gibt es keine, wird mit einer Warnung ad hoc signiert. Mit `SNAPPILE_SIGNING_IDENTITY` lässt sich die Identität explizit setzen; `SNAPPILE_SIGNING_IDENTITY=-` erzwingt bewusst eine ad-hoc-Signatur. Dieser lokale Build ist nicht notarisiert. Das geprüfte Archiv liegt zusätzlich in `outputs/SnapPile-macOS.zip`.
 
 ### Signierter und notarisierter Production-Build
