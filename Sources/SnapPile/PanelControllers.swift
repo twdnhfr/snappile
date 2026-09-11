@@ -113,7 +113,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 model: model, size: MenuPopoverLayout.size(itemCount: model.store.items.count)))
         super.init()
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "square.3.layers.3d", accessibilityDescription: "SnapPile")
+            button.image =
+                BrandAssets.menuBarMark()
+                ?? NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "SnapPile")
             button.image?.isTemplate = true
             button.target = self
             button.action = #selector(toggle(_:))

@@ -19,9 +19,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 15) {
-                Image(systemName: "square.3.layers.3d").font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(pileAccent).frame(width: 66, height: 66)
-                    .background(pileAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 18))
+                BrandIcon().frame(width: 66, height: 66)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("SnapPile").font(.system(size: 27, weight: .semibold, design: .rounded))
                     Text("Kurz festhalten. Einfach weitergeben.").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -184,7 +182,7 @@ struct MenuPopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "square.3.layers.3d").foregroundStyle(pileAccent)
+                BrandMark().frame(width: 20, height: 20)
                 Text("SnapPile").font(.system(size: 16, weight: .semibold, design: .rounded))
                 Spacer()
                 Text("\(store.items.count) / \(settings.maxItems)").font(.system(size: 11)).foregroundStyle(.secondary)

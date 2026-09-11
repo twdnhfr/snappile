@@ -1,0 +1,8 @@
+Use case: logo-brand
+Asset type: final production macOS app icon, 1024 x 1024 PNG with real transparent alpha outside the icon.
+Primary request: Design the new icon for SnapPile, a small native macOS utility that temporarily collects screenshots for AI chats.
+Subject: a compact stack of three rounded square screenshot cards, viewed straight on, back cards shifted upward and slightly right. The large front card is mint jade with ONLY two bold dark graphite capture brackets inside it: an L in the upper left and the opposing L in the lower right. No dot, no picture, no landscape, no sparkle, no letters.
+Composition: a dark graphite macOS rounded-square tile centered with even 100px transparent outer margins on a 1024px canvas. The stack fills about 64% of the tile, centered optically; strong silhouette clear at 32px. Three clearly distinct layers, very restrained depth.
+Style: exquisitely polished native Mac application icon, simple geometric forms, softly chamfered edges, subtle directional light from upper left; velvety graphite tile and clean luminous mint front card, deeper teal rear cards. Minimal dimensionality, refined material, crisp edges, no fuzzy glow.
+Palette: graphite #182B2D and #102023; mint #63E6BE; jade #25A68C.
+Constraints: one single icon, front-on orthographic view; actual transparent pixels outside rounded tile, no surrounding background or mockup, no caption, no typography, no border outside the icon. Avoid glossy plastic, excessive bevels, clutter, visual effects.

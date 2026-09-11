@@ -10,7 +10,10 @@ let package = Package(
     ],
     targets: [
         .target(name: "SnapPileCore"),
-        .executableTarget(name: "SnapPile", dependencies: ["SnapPileCore"]),
+        .executableTarget(
+            name: "SnapPile", dependencies: ["SnapPileCore"],
+            resources: [.process("Resources")]
+        ),
         .testTarget(name: "SnapPileCoreTests", dependencies: ["SnapPileCore"]),
         .testTarget(name: "SnapPileAppTests", dependencies: ["SnapPile", "SnapPileCore"]),
     ]

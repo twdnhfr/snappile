@@ -1,4 +1,10 @@
-# SnapPile
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Support/Brand/snappile-logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="Support/Brand/snappile-logo-light.svg">
+    <img src="Support/Brand/snappile-logo-light.svg" alt="SnapPile" width="360">
+  </picture>
+</h1>
 
 Ein temporärer visueller Zwischenspeicher für KI-Workflows. Nativ für macOS: Bereich aufnehmen, kurz im schwebenden Stapel sammeln und direkt weitergeben.
 
@@ -47,7 +53,7 @@ open outputs/SnapPile.app
 
 Render-Tests legen Vergleichsbilder unter `$TMPDIR/SnapPileTests` ab, nicht im Repository.
 
-Die Formatierung ist in `.swift-format` festgelegt. Vor einem Commit `swift format --in-place --recursive Sources Tests Package.swift scripts/make-icon.swift` ausführen. Die CI unter `.github/workflows/ci.yml` prüft bei jedem Push Formatierung, Build, Tests und das ad hoc signierte App-Bundle.
+Die Formatierung ist in `.swift-format` festgelegt. Vor einem Commit `swift format --in-place --recursive Sources Tests Package.swift scripts/*.swift` ausführen. Die CI unter `.github/workflows/ci.yml` prüft bei jedem Push Formatierung, Build, Tests und das ad hoc signierte App-Bundle.
 
 Der lokale Build erzeugt eine App für die Architektur des ausführenden Macs. Ohne gesetztes `SNAPPILE_SIGNING_IDENTITY` wird genau eine gültige Identität vom Typ `Developer ID Application:` automatisch verwendet. Gibt es mehrere passende Identitäten, bricht der Build mit einer Aufforderung zur expliziten Auswahl ab. Gibt es keine, wird mit einer Warnung ad hoc signiert. Mit `SNAPPILE_SIGNING_IDENTITY` lässt sich die Identität explizit setzen; `SNAPPILE_SIGNING_IDENTITY=-` erzwingt bewusst eine ad-hoc-Signatur. Dieser lokale Build ist nicht notarisiert. Das geprüfte Archiv liegt zusätzlich in `outputs/SnapPile-macOS.zip`.
 
@@ -80,7 +86,9 @@ Demo-Bilder sind ausdrücklich als Beispiel gekennzeichnet. Dieser Modus ist aus
 - `Tests/SnapPileCoreTests`: synthetische Regressionstests ohne echte Bildschirmdaten.
 - `Tests/SnapPileAppTests`: Layout- und Navigationstests für Stapel und Menü, ebenfalls mit synthetischen Bildern.
 - `Support/Info.plist`: App-Bundle und Berechtigungstexte.
-- `scripts/build-app.sh`: lokaler App-Build sowie signierter und notarisierter Production-Build; `scripts/make-icon.swift` zeichnet das App-Icon.
+- `Sources/SnapPile/Resources`: App-Icon für die Oberfläche, farbige Bildmarke und monochromes Menüleistensymbol.
+- `Support/Brand`: Icon-Master und skalierbare Logos für helle und dunkle Hintergründe; Details unter [Branding](Support/Brand/README.md).
+- `scripts/build-app.sh`: lokaler App-Build sowie signierter und notarisierter Production-Build; `scripts/make-icon.swift` erzeugt das Iconset aus dem PNG-Master. `scripts/make-brand.swift` erzeugt die README-Logos aus der Bildmarke mit eingebetteten Buchstabenkonturen.
 
 ## Grenzen von Version 0.1
 

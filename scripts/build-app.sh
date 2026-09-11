@@ -76,6 +76,12 @@ OUTPUT_APP="$OUTPUT_DIR/SnapPile.app"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$PROJECT_DIR/work" "$OUTPUT_DIR"
 cp "$BIN_DIR/SnapPile" "$APP_DIR/Contents/MacOS/SnapPile"
 cp Support/Info.plist "$APP_DIR/Contents/Info.plist"
+RESOURCE_BUNDLE="$BIN_DIR/SnapPile_SnapPile.bundle"
+if [[ ! -d "$RESOURCE_BUNDLE" ]]; then
+  echo "SwiftPM-Ressourcenbundle fehlt: $RESOURCE_BUNDLE" >&2
+  exit 1
+fi
+ditto "$RESOURCE_BUNDLE" "$APP_DIR/Contents/Resources/$(basename "$RESOURCE_BUNDLE")"
 swift scripts/make-icon.swift "$PROJECT_DIR/work/AppIcon.iconset"
 iconutil -c icns "$PROJECT_DIR/work/AppIcon.iconset" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
 xattr -cr "$APP_DIR"

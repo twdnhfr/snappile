@@ -75,11 +75,8 @@ struct OnboardingView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .center, spacing: 14) {
-                Image(systemName: "square.3.layers.3d")
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundStyle(pileAccent)
+                BrandIcon()
                     .frame(width: 62, height: 62)
-                    .background(pileAccent.opacity(0.11), in: RoundedRectangle(cornerRadius: 17))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("SNAPPILE")
