@@ -3,8 +3,8 @@ import SwiftUI
 
 public enum ThumbnailContentMode { case fit, fill }
 
-/// Ein Thumbnail mit getrennten Klick- und Drag-Gesten. Der Drag exportiert stets
-/// die originalen PNG-Bytes; das Thumbnail dient ausschließlich als Drag-Ansicht.
+/// A thumbnail with separate click and drag gestures. Dragging always exports
+/// the original PNG bytes; the thumbnail is used only as the drag preview.
 public struct DraggableThumbnail: NSViewRepresentable {
     public let item: ScreenshotItem
     public let onClick: () -> Void
@@ -92,7 +92,7 @@ public struct DraggableThumbnail: NSViewRepresentable {
             dragError = onDragError
             self.contentMode = contentMode
             setAccessibilityRole(.image)
-            setAccessibilityLabel("Screenshot \(item.suggestedFilename)")
+            setAccessibilityLabel(L10n.format("Screenshot %@", item.suggestedFilename))
             needsDisplay = true
         }
 

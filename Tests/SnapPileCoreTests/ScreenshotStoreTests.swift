@@ -156,7 +156,7 @@ final class ScreenshotStoreTests: XCTestCase {
         store.togglePin(id: middle)
 
         store.maxItems = 1
-        XCTAssertEqual(store.items.count, 2, "Angeheftete Elemente dürfen das neue Limit vorübergehend überschreiten")
+        XCTAssertEqual(store.items.count, 2, "Pinned items may temporarily exceed the new limit")
         XCTAssertNotNil(store.item(id: oldest))
         XCTAssertNotNil(store.item(id: middle))
 

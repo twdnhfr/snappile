@@ -26,7 +26,7 @@ final class StackPanelController {
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
-        panel.title = "SnapPile · Stapel"
+        panel.title = L10n.text("SnapPile · Pile")
         let content = NSHostingView(
             rootView: StackView(model: model).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top))
         // The panel and its cards share one explicit layout; prevent AppKit from
@@ -115,12 +115,12 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         if let button = item.button {
             button.image =
                 BrandAssets.menuBarMark()
-                ?? NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: "SnapPile")
+                ?? NSImage(systemSymbolName: "rectangle.stack", accessibilityDescription: L10n.text("SnapPile"))
             button.image?.isTemplate = true
             button.target = self
             button.action = #selector(toggle(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            button.toolTip = "SnapPile · temporärer Screenshot-Stapel"
+            button.toolTip = L10n.text("SnapPile · temporary screenshot pile")
         }
         popover.behavior = .transient
         popover.animates = false
@@ -136,7 +136,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     func updateCount(_ count: Int) {
         item.button?.title = count > 0 ? " \(count)" : ""
         item.button?.font = .monospacedDigitSystemFont(ofSize: 11, weight: .medium)
-        item.button?.setAccessibilityLabel("SnapPile, \(count) Screenshots")
+        item.button?.setAccessibilityLabel(
+            count == 1 ? L10n.text("SnapPile, 1 screenshot") : L10n.format("SnapPile, %ld screenshots", count))
         if popover.isShown { applyContentSize() }
     }
     func close() {
@@ -158,13 +159,14 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     @objc private func toggle(_ sender: Any?) {
         if NSApp.currentEvent?.type == .rightMouseUp {
             let menu = NSMenu()
-            menu.addItem(makeMenuItem("Bereich aufnehmen", #selector(capture)))
-            menu.addItem(makeMenuItem("Stapel zeigen", #selector(showStack)))
-            menu.addItem(makeMenuItem("Einstellungen …", #selector(settings)))
-            menu.addItem(makeMenuItem("Einrichtung …", #selector(onboarding)))
+            menu.addItem(makeMenuItem(L10n.text("Capture Area"), #selector(capture)))
+            menu.addItem(makeMenuItem(L10n.text("Show Pile"), #selector(showStack)))
+            menu.addItem(makeMenuItem(L10n.text("Settings…"), #selector(settings)))
+            menu.addItem(makeMenuItem(L10n.text("Setup…"), #selector(onboarding)))
             menu.addItem(.separator())
             menu.addItem(
-                withTitle: "SnapPile beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+                withTitle: L10n.text("Quit SnapPile"), action: #selector(NSApplication.terminate(_:)),
+                keyEquivalent: "q")
             close()
             if let button = item.button {
                 menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.minY), in: button)
@@ -276,33 +278,36 @@ struct PreviewView: View {
         if let item = store.item(id: itemID) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Text("\(item.pixelWidth) × \(item.pixelHeight)").font(.system(size: 12, weight: .medium))
-                        .monospacedDigit()
+                    Text(L10n.format("%ld × %ld", item.pixelWidth, item.pixelHeight)).font(
+                        .system(size: 12, weight: .medium)
+                    )
+                    .monospacedDigit()
                     Text(lifetimeText(item, minutes: model.settings.expiryMinutes)).font(.system(size: 11))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button {
                         model.copy(itemID)
                     } label: {
-                        Label("Kopieren", systemImage: "doc.on.doc")
+                        Label(L10n.text("Copy"), systemImage: "doc.on.doc")
                     }.keyboardShortcut("c", modifiers: .command)
                     Button {
                         model.save(itemID)
                     } label: {
-                        Label("Speichern", systemImage: "square.and.arrow.down")
+                        Label(L10n.text("Save"), systemImage: "square.and.arrow.down")
                     }.keyboardShortcut("s", modifiers: .command)
                     SmallIconButton(
-                        item.isPinned ? "Pin lösen" : "Anheften", symbol: item.isPinned ? "pin.fill" : "pin",
+                        item.isPinned ? L10n.text("Unpin") : L10n.text("Pin"),
+                        symbol: item.isPinned ? "pin.fill" : "pin",
                         tint: item.isPinned ? pileAccent : .secondary
                     ) { store.togglePin(id: itemID) }
-                    SmallIconButton("Löschen", symbol: "trash") { model.delete(itemID) }
+                    SmallIconButton(L10n.text("Delete"), symbol: "trash") { model.delete(itemID) }
                 }.padding(14).background(.bar)
                 FullImageView(pngData: item.pngData).frame(maxWidth: .infinity, maxHeight: .infinity).padding(18)
                     .background(.primary.opacity(0.035))
                 HStack {
                     Text(
                         model.message
-                            ?? "Originalauflösung · Speichern oder Kopieren gibt das vollständige Bild weiter."
+                            ?? L10n.text("Original resolution · Save or copy to share the full image.")
                     )
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     Spacer()
@@ -310,12 +315,12 @@ struct PreviewView: View {
                         width: 62, height: 37
                     )
                     .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.primary.opacity(0.15)))
-                    .help("Originalbild von hier in deinen Chat ziehen")
-                    Text("Ziehen").font(.system(size: 10)).foregroundStyle(.secondary)
+                    .help(L10n.text("Drag the original image from here into your chat"))
+                    Text(L10n.text("Drag")).font(.system(size: 10)).foregroundStyle(.secondary)
                 }.padding(.horizontal, 14).padding(.vertical, 8)
             }
         } else {
-            Text("Dieses Bild ist nicht mehr im Stapel.").foregroundStyle(.secondary)
+            Text(L10n.text("This image is no longer in the pile.")).foregroundStyle(.secondary)
         }
     }
 }
@@ -328,7 +333,7 @@ private struct FullImageView: NSViewRepresentable {
         view.image = NSImage(data: pngData)
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-        view.setAccessibilityLabel("Screenshot in Originalauflösung")
+        view.setAccessibilityLabel(L10n.text("Screenshot at original resolution"))
         return view
     }
     func updateNSView(_ view: NSImageView, context: Context) {

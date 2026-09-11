@@ -1,4 +1,5 @@
 import AppKit
+import SnapPileCore
 import SwiftUI
 
 enum BrandAssets {
@@ -23,15 +24,17 @@ enum BrandAssets {
     }
 
     static func icon() -> NSImage? {
-        image(named: "BrandIcon.png", accessibilityDescription: "SnapPile")
+        image(named: "BrandIcon.png", accessibilityDescription: L10n.text("SnapPile"))
     }
 
     static func mark() -> NSImage? {
-        image(named: "BrandMark.svg", accessibilityDescription: "SnapPile")
+        image(named: "BrandMark.svg", accessibilityDescription: L10n.text("SnapPile"))
     }
 
     static func menuBarMark() -> NSImage? {
-        guard let image = image(named: "MenuBarMark.svg", accessibilityDescription: "SnapPile") else { return nil }
+        guard let image = image(named: "MenuBarMark.svg", accessibilityDescription: L10n.text("SnapPile")) else {
+            return nil
+        }
         image.isTemplate = true
         image.size = NSSize(width: 18, height: 18)
         return image
@@ -47,7 +50,7 @@ struct BrandIcon: View {
                 Image(systemName: "rectangle.stack").resizable().scaledToFit()
             }
         }
-        .accessibilityLabel("SnapPile")
+        .accessibilityLabel(L10n.text("SnapPile"))
     }
 }
 
@@ -60,6 +63,6 @@ struct BrandMark: View {
                 Image(systemName: "rectangle.stack").resizable().scaledToFit()
             }
         }
-        .accessibilityLabel("SnapPile")
+        .accessibilityLabel(L10n.text("SnapPile"))
     }
 }

@@ -5,7 +5,7 @@ import Combine
 public enum StackSide: String, CaseIterable, Identifiable {
     case left, right
     public var id: String { rawValue }
-    public var label: String { self == .left ? "Links" : "Rechts" }
+    public var label: String { self == .left ? L10n.text("Left") : L10n.text("Right") }
 }
 
 @MainActor
@@ -62,5 +62,7 @@ public final class AppSettings: ObservableObject {
         (122, "F1"), (120, "F2"), (99, "F3"), (118, "F4"), (96, "F5"), (97, "F6"), (98, "F7"), (100, "F8"),
         (101, "F9"), (109, "F10"), (103, "F11"), (111, "F12"),
     ]
-    public static func keyLabel(_ code: UInt32) -> String { keys.first { $0.code == code }?.label ?? "Taste \(code)" }
+    public static func keyLabel(_ code: UInt32) -> String {
+        keys.first { $0.code == code }?.label ?? L10n.format("Key %u", code)
+    }
 }

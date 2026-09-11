@@ -9,11 +9,11 @@ enum IconError: Error, CustomStringConvertible {
     case encoding(Int)
     var description: String {
         switch self {
-        case .usage: return "Aufruf: scripts/make-icon.swift <ziel-iconset> [quelle-png]"
-        case .missingSource(let url): return "Icon-Quelle nicht gefunden: \(url.path)"
-        case .invalidSource(let url): return "Icon-Quelle konnte nicht gelesen werden: \(url.path)"
-        case .bitmapCreation(let pixels): return "Bitmap für Icon-Größe \(pixels) konnte nicht erstellt werden."
-        case .encoding(let pixels): return "PNG für Icon-Größe \(pixels) konnte nicht kodiert werden."
+        case .usage: return "Usage: scripts/make-icon.swift <destination-iconset> [source-png]"
+        case .missingSource(let url): return "Icon source not found: \(url.path)"
+        case .invalidSource(let url): return "Could not read the icon source: \(url.path)"
+        case .bitmapCreation(let pixels): return "Could not create a bitmap for the \(pixels)-pixel icon."
+        case .encoding(let pixels): return "Could not encode a PNG for the \(pixels)-pixel icon."
         }
     }
 }

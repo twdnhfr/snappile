@@ -57,7 +57,7 @@ struct StackView: View {
     private func stackContent(maxCardHeight: CGFloat) -> some View {
         VStack(spacing: 6) {
             HStack(spacing: 4) {
-                Text("SnapPile").font(.system(size: 11, weight: .semibold))
+                Text(L10n.text("SnapPile")).font(.system(size: 11, weight: .semibold))
                 Button(action: model.toggleExpanded) {
                     Text(
                         model.isExpanded || store.items.count < 2
@@ -67,14 +67,17 @@ struct StackView: View {
                     .padding(.horizontal, 4).padding(.vertical, 3)
                     .background(.primary.opacity(0.07), in: Capsule())
                 }.buttonStyle(.plain).help(
-                    "Bild \(model.stackPosition) von \(store.items.count) · Scrollen zum Blättern · Klicken für alle Bilder"
+                    L10n.format(
+                        "Image %ld of %ld · Scroll to browse · Click for all images", model.stackPosition,
+                        store.items.count)
                 )
                 .accessibilityLabel(
                     model.isExpanded
-                        ? "\(store.items.count) Bilder" : "Bild \(model.stackPosition) von \(store.items.count)")
+                        ? (store.items.count == 1 ? L10n.text("1 image") : L10n.format("%ld images", store.items.count))
+                        : L10n.format("Image %ld of %ld", model.stackPosition, store.items.count))
                 Spacer(minLength: 2)
-                SmallIconButton("Neue Aufnahme", symbol: "plus", action: model.beginCapture)
-                SmallIconButton("Stapel ausblenden", symbol: "minus", action: model.hideStack)
+                SmallIconButton(L10n.text("New Capture"), symbol: "plus", action: model.beginCapture)
+                SmallIconButton(L10n.text("Hide Pile"), symbol: "minus", action: model.hideStack)
             }.frame(height: 24).padding(.horizontal, 2)
             if model.isExpanded {
                 ScrollView {
@@ -146,7 +149,9 @@ struct ScreenshotCard: View {
         .frame(width: cardSize.width, height: cardSize.height)
         .background(.primary.opacity(0.045))
         .help(
-            "\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes)) · Klicken für Vorschau"
+            L10n.format(
+                "%ld × %ld · %@ · Click for Preview", item.pixelWidth, item.pixelHeight,
+                lifetimeText(item, minutes: model.settings.expiryMinutes))
         )
         .overlay(alignment: .topTrailing) {
             overlayActions(compact: cardSize.width < 110).padding(3)
@@ -158,7 +163,9 @@ struct ScreenshotCard: View {
             if hovering {
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     Text(
-                        "\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes, now: context.date))"
+                        L10n.format(
+                            "%ld × %ld · %@", item.pixelWidth, item.pixelHeight,
+                            lifetimeText(item, minutes: model.settings.expiryMinutes, now: context.date))
                     )
                     .font(.system(size: 9)).monospacedDigit()
                     .padding(.horizontal, 7).padding(.vertical, 4)
@@ -171,11 +178,11 @@ struct ScreenshotCard: View {
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
         .contextMenu {
-            Button("Kopieren") { model.copy(item.id) }
-            Button("Speichern …") { model.save(item.id) }
-            Button(item.isPinned ? "Pin lösen" : "Anheften") { model.store.togglePin(id: item.id) }
+            Button(L10n.text("Copy")) { model.copy(item.id) }
+            Button(L10n.text("Save…")) { model.save(item.id) }
+            Button(item.isPinned ? L10n.text("Unpin") : L10n.text("Pin")) { model.store.togglePin(id: item.id) }
             Divider()
-            Button("Löschen", role: .destructive) { model.delete(item.id) }
+            Button(L10n.text("Delete"), role: .destructive) { model.delete(item.id) }
         }
     }
 
@@ -194,13 +201,13 @@ struct ScreenshotCard: View {
 
     @ViewBuilder
     private var actionButtons: some View {
-        OverlayIconButton("Kopieren", symbol: "doc.on.doc") { model.copy(item.id) }
-        OverlayIconButton("Speichern", symbol: "square.and.arrow.down") { model.save(item.id) }
+        OverlayIconButton(L10n.text("Copy"), symbol: "doc.on.doc") { model.copy(item.id) }
+        OverlayIconButton(L10n.text("Save"), symbol: "square.and.arrow.down") { model.save(item.id) }
         OverlayIconButton(
-            item.isPinned ? "Pin lösen" : "Anheften", symbol: item.isPinned ? "pin.fill" : "pin",
+            item.isPinned ? L10n.text("Unpin") : L10n.text("Pin"), symbol: item.isPinned ? "pin.fill" : "pin",
             selected: item.isPinned
         ) { model.store.togglePin(id: item.id) }
-        OverlayIconButton("Löschen", symbol: "trash") { model.delete(item.id) }
+        OverlayIconButton(L10n.text("Delete"), symbol: "trash") { model.delete(item.id) }
     }
 }
 
@@ -244,7 +251,7 @@ struct SmallIconButton: View {
     }
 }
 func lifetimeText(_ item: ScreenshotItem, minutes: Int, now: Date = Date()) -> String {
-    if item.isPinned { return "Angeheftet" }
+    if item.isPinned { return L10n.text("Pinned") }
     let remaining = max(0, Int(ceil((item.expirationDate(minutes: minutes)?.timeIntervalSince(now) ?? 0) / 60)))
-    return remaining > 0 ? "noch \(remaining) Min." : "läuft ab"
+    return remaining > 0 ? L10n.format("%ld min. left", remaining) : L10n.text("Expiring")
 }

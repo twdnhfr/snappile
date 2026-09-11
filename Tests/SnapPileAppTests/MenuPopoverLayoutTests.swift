@@ -31,11 +31,11 @@ final class MenuPopoverLayoutTests: XCTestCase {
                     proposedHeight: proposedHeight)
                 XCTAssertEqual(
                     result.hostFrame.size, expected,
-                    "Host-Größe driftet bei \(itemCount) Elementen und Proposal \(proposedHeight)")
+                    "Host size drifts with \(itemCount) items and proposed height \(proposedHeight)")
                 XCTAssertEqual(result.fittingSize.width, expected.width, accuracy: 1)
                 XCTAssertEqual(
                     result.fittingSize.height, expected.height, accuracy: 1,
-                    "Fitting-Size driftet bei \(itemCount) Elementen")
+                    "Fitting size drifts with \(itemCount) items")
             }
         }
     }
@@ -66,7 +66,7 @@ final class MenuPopoverLayoutTests: XCTestCase {
             }
             if firstAccentRow != nil { break }
         }
-        XCTAssertLessThan(try XCTUnwrap(firstAccentRow), 100, "Menükopf ist nach unten verschoben")
+        XCTAssertLessThan(try XCTUnwrap(firstAccentRow), 100, "Menu header is shifted down")
         try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(
             to: TestOutput.directory().appendingPathComponent("popover-empty.png"))
     }

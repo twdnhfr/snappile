@@ -46,11 +46,12 @@ public enum ScreenshotStoreError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidPNG: return "Die Datei ist kein gültiges PNG-Bild."
+        case .invalidPNG: return L10n.text("The file is not a valid PNG image.")
         case .invalidDimensions:
-            return "Die angegebenen Bildabmessungen sind ungültig oder stimmen nicht mit dem PNG überein."
-        case .imageTooLarge: return "Das PNG überschreitet das Speicherlimit."
-        case .capacityExceeded: return "Das Bild kann wegen angehefteter Screenshots nicht aufgenommen werden."
+            return L10n.text("The specified image dimensions are invalid or do not match the PNG.")
+        case .imageTooLarge: return L10n.text("The PNG exceeds the memory limit.")
+        case .capacityExceeded:
+            return L10n.text("The image cannot be captured because pinned screenshots use the available capacity.")
         }
     }
 }

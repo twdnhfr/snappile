@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: swift --version
-      - name: Formatierung prüfen
+      - name: Check formatting
         run: swift format lint --strict --recursive Sources Tests Package.swift scripts/*.swift
-      - name: Bauen
+      - name: Build
         run: swift build
-      - name: Testen
+      - name: Test
         run: swift test
-      - name: App-Bundle bauen (ad hoc signiert)
+      - name: Build app bundle (ad hoc signed)
         run: bash scripts/build-app.sh

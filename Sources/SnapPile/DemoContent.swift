@@ -1,5 +1,6 @@
 import AppKit
 import ImageIO
+import SnapPileCore
 import UniformTypeIdentifiers
 
 extension AppController {
@@ -34,14 +35,14 @@ private func makeDemoImage(variant: Int) -> CGImage? {
         color.setFill()
         NSBezierPath(ovalIn: NSRect(x: 28 + index * 28, y: 760, width: 13, height: 13)).fill()
     }
-    drawText("BEISPIEL  /  SNAPPILE", x: 505, y: 758, size: 15, color: .secondaryLabelColor)
+    drawText(L10n.text("EXAMPLE  /  SNAPPILE"), x: 505, y: 758, size: 15, color: .secondaryLabelColor)
     let titles = [
-        "Eine Idee festhalten.", "Kontext für deinen Agent.", "Kleine Details. Große Wirkung.",
-        "Bereit für den nächsten Prompt.",
+        L10n.text("Capture an idea."), L10n.text("Context for your agent."), L10n.text("Small details. Big impact."),
+        L10n.text("Ready for the next prompt."),
     ]
     drawText(titles[variant], x: 74, y: 630, size: 42, color: .white, weight: .semibold)
     drawText(
-        "SCREENSHOT → STAPEL → KI-CHAT", x: 77, y: 588, size: 17,
+        L10n.text("SCREENSHOT → PILE → AI CHAT"), x: 77, y: 588, size: 17,
         color: NSColor(calibratedRed: 0.28, green: 0.83, blue: 0.69, alpha: 1))
     for i in 0..<3 {
         let rect = NSRect(x: 76 + i * 382, y: 190, width: 354, height: 300)
@@ -51,7 +52,8 @@ private func makeDemoImage(variant: Int) -> CGImage? {
             ["01", "02", "03"][i], x: CGFloat(rect.minX + 25), y: 426, size: 17,
             color: NSColor(calibratedRed: 0.28, green: 0.83, blue: 0.69, alpha: 1))
         drawText(
-            ["Aufnehmen", "Sammeln", "Weitergeben"][i], x: rect.minX + 25, y: 369, size: 25, color: .white,
+            [L10n.text("Capture"), L10n.text("Collect"), L10n.text("Share")][i], x: rect.minX + 25, y: 369, size: 25,
+            color: .white,
             weight: .semibold)
         for j in 0..<3 {
             NSColor(white: 0.7, alpha: 0.14).setFill()
@@ -60,7 +62,7 @@ private func makeDemoImage(variant: Int) -> CGImage? {
         }
     }
     drawText(
-        "Synthetische Demo · keine echten Bildschirmdaten", x: 77, y: 75, size: 16,
+        L10n.text("Synthetic demo · no real screen data"), x: 77, y: 75, size: 16,
         color: NSColor(white: 0.65, alpha: 1))
     NSGraphicsContext.restoreGraphicsState()
     return context.makeImage()

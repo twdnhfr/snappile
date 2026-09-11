@@ -6,12 +6,14 @@
 <key>CFBundleIdentifier</key><string>de.wdnhfr.snappile</string>
 <key>CFBundleExecutable</key><string>SnapPile</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.3</string>
-<key>CFBundleVersion</key><string>4</string>
+<key>CFBundleShortVersionString</key><string>0.1.4</string>
+<key>CFBundleVersion</key><string>5</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleLocalizations</key><array><string>en</string></array>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSScreenCaptureUsageDescription</key><string>SnapPile nimmt nur den von dir ausgewählten Bildschirmbereich auf und hält ihn vorübergehend im Speicher.</string>
-<key>NSInputMonitoringUsageDescription</key><string>SnapPile erkennt die gleichzeitig gedrückte linke und rechte Option-Taste, um eine Bereichsaufnahme zu starten.</string>
+<key>NSScreenCaptureUsageDescription</key><string>SnapPile captures only the screen area you select and keeps it temporarily in memory.</string>
+<key>NSInputMonitoringUsageDescription</key><string>SnapPile detects the left and right Option keys pressed together to start a capture.</string>
 </dict></plist>

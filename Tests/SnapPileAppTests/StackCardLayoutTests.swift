@@ -56,7 +56,7 @@ final class StackCardLayoutTests: XCTestCase {
             let edgeColor = try XCTUnwrap(bitmap.colorAt(x: 4, y: bitmap.pixelsHigh / 2)?.usingColorSpace(.deviceRGB))
             XCTAssertGreaterThan(
                 saturation(edgeColor), 0.2,
-                "Farbige Vorschau fehlt am Rand in \(name)")
+                "Color preview is missing at the edge in \(name)")
         }
     }
 
@@ -94,12 +94,12 @@ final class StackCardLayoutTests: XCTestCase {
             host.displayIfNeeded()
 
             let thumbnails = findThumbnailViews(in: host)
-            XCTAssertEqual(thumbnails.count, 1, "Der eingeklappte Stapel zeigt eine Front-Thumbnail-View")
+            XCTAssertEqual(thumbnails.count, 1, "The collapsed stack shows one front thumbnail view")
             let thumbnail = try XCTUnwrap(thumbnails.first)
             XCTAssertEqual(thumbnail.bounds.size, CGSize(width: 175, height: 175))
             let imageFrame = thumbnail.convert(thumbnail.bounds, to: host)
             XCTAssertTrue(
-                host.bounds.insetBy(dx: -1, dy: -1).contains(imageFrame), "Bild überschreitet Panel in \(name)")
+                host.bounds.insetBy(dx: -1, dy: -1).contains(imageFrame), "Image exceeds the panel bounds in \(name)")
             let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
             host.cacheDisplay(in: host.bounds, to: bitmap)
             let scale = CGFloat(bitmap.pixelsWide) / host.bounds.width
@@ -108,8 +108,8 @@ final class StackCardLayoutTests: XCTestCase {
                 bitmap.colorAt(x: Int((imageFrame.minX + 3) * scale), y: y)?.usingColorSpace(.deviceRGB))
             let right = try XCTUnwrap(
                 bitmap.colorAt(x: Int((imageFrame.maxX - 3) * scale), y: y)?.usingColorSpace(.deviceRGB))
-            XCTAssertGreaterThan(saturation(left), 0.2, "Leerer linker Rand in \(name)")
-            XCTAssertGreaterThan(saturation(right), 0.2, "Leerer rechter Rand in \(name)")
+            XCTAssertGreaterThan(saturation(left), 0.2, "Empty left edge in \(name)")
+            XCTAssertGreaterThan(saturation(right), 0.2, "Empty right edge in \(name)")
             let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
             try data.write(to: outputDirectory.appendingPathComponent("stack-adaptive-\(name).png"))
 
@@ -123,7 +123,7 @@ final class StackCardLayoutTests: XCTestCase {
             let switchedThumbnail = try XCTUnwrap(findThumbnailViews(in: host).first)
             XCTAssertEqual(
                 switchedThumbnail.bounds.width / switchedThumbnail.bounds.height, 1, accuracy: 0.02,
-                "Nach dem Löschen der Frontkarte übernimmt die quadratische Karte im selben Host korrekt")
+                "After deleting the front card, the square card takes over correctly in the same host")
         }
     }
 

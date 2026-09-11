@@ -1,42 +1,42 @@
 # SnapPile · Branding
 
-Drei versetzte Screenshot-Karten und zwei gegenüberliegende Aufnahme-Ecken bilden die Bildmarke. Das macOS-App-Icon ergänzt die Karten um eine Graphit-Kachel mit dezenter Tiefe. Die Menüleiste verwendet eine vereinfachte, einfarbige Kontur.
+Three offset screenshot cards and two opposing capture corners form the brand mark. The macOS app icon adds a graphite tile with subtle depth. The menu bar uses a simplified monochrome outline.
 
-## Dateien
+## Files
 
-- `AppIcon.png`: hochauflösender RGBA-Master mit transparentem Außenraum. Der App-Build erzeugt daraus alle zehn Standardgrößen für `AppIcon.icns`.
-- `snappile-logo-light.svg`: transparentes Logo mit dunkler Schrift für helle Hintergründe.
-- `snappile-logo-dark.svg`: transparentes Logo mit heller Schrift für dunkle Hintergründe.
-- [`BrandMark.svg`](../../Sources/SnapPile/Resources/BrandMark.svg): editierbare, farbige Bildmarke für die App und die Logos.
-- [`MenuBarMark.svg`](../../Sources/SnapPile/Resources/MenuBarMark.svg): separate, monochrome Kontur für die Menüleiste; macOS übernimmt deren Einfärbung.
-- [`BrandIcon.png`](../../Sources/SnapPile/Resources/BrandIcon.png): 256-Pixel-Ableitung des Masters für Onboarding und Einstellungen.
+- `AppIcon.png`: high-resolution RGBA master with transparent outer space. The app build derives all ten standard iconset sizes for `AppIcon.icns`.
+- `snappile-logo-light.svg`: transparent logo with dark lettering for light backgrounds.
+- `snappile-logo-dark.svg`: transparent logo with light lettering for dark backgrounds.
+- [`BrandMark.svg`](../../Sources/SnapPile/Resources/BrandMark.svg): editable color mark shared by the app and wordmarks.
+- [`MenuBarMark.svg`](../../Sources/SnapPile/Resources/MenuBarMark.svg): separate monochrome outline for the menu bar; macOS supplies its tint.
+- [`BrandIcon.png`](../../Sources/SnapPile/Resources/BrandIcon.png): 256-pixel derivative of the master for onboarding and settings.
 
-Die README wählt die Logo-Variante über `prefers-color-scheme`. Alle Buchstaben sind als Pfade eingebettet; Betrachter benötigen keine Schriftinstallation. Die Marken-Assets stehen wie das Projekt unter der [MIT-Lizenz](../../LICENSE).
+The README selects a logo using `prefers-color-scheme`. All letters are embedded as paths, so viewers do not need the font installed. Like the project, these assets are available under the [MIT license](../../LICENSE).
 
-## Farben
+## Colors
 
-| Einsatz | Farbe |
+| Use | Color |
 | --- | --- |
-| Mint, vordere Karte | `#63E6BE` |
-| Jade, mittlere Karte | `#23AB90` |
-| Petrol, hintere Karte | `#147C70` |
-| Aufnahme-Ecken | `#183B39` |
-| Wortmarke auf Hell | `#193A37` |
-| Wortmarke auf Dunkel | `#F0F8F5` |
+| Mint, front card | `#63E6BE` |
+| Jade, middle card | `#23AB90` |
+| Teal, back card | `#147C70` |
+| Capture corners | `#183B39` |
+| Lettering on light backgrounds | `#193A37` |
+| Lettering on dark backgrounds | `#F0F8F5` |
 
-## Aktualisieren
+## Updating the assets
 
-Nach einer Änderung an `BrandMark.svg` lassen sich die Wortmarken auf macOS neu erzeugen:
+After editing `BrandMark.svg`, regenerate the wordmarks on macOS:
 
 ```sh
 swift scripts/make-brand.swift
 ```
 
-Nach einem neuen Icon-Master auch die kleine App-Ressource erneuern:
+After replacing the icon master, update the smaller app resource as well:
 
 ```sh
 sips -z 256 256 Support/Brand/AppIcon.png --out Sources/SnapPile/Resources/BrandIcon.png
 bash scripts/build-app.sh
 ```
 
-Die Bildmarke und Wortmarken sind native SVG-Assets. Der Icon-Master entstand mit dem integrierten Bildgenerator (`imagegen`, keine externe CLI). Der verwendete Prompt ist unter [icon-prompt.txt](icon-prompt.txt) dokumentiert.
+The mark and wordmarks are native SVG assets. The icon master was created with the built-in image generator (`imagegen`, not an external CLI). The full prompt is documented in [icon-prompt.txt](icon-prompt.txt).

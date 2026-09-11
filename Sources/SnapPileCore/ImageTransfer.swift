@@ -8,8 +8,8 @@ public enum ImageTransfer {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
-        // PNG bleibt die kanonische Darstellung und wird ohne erneutes Dekodieren
-        // direkt aus dem Originalbild übernommen.
+        // PNG remains the canonical representation and is copied directly from
+        // the original image without decoding it again.
         let pasteboardItem = NSPasteboardItem()
         pasteboardItem.setData(item.pngData, forType: .png)
         return pasteboard.writeObjects([pasteboardItem])
@@ -23,11 +23,11 @@ public enum ImageTransfer {
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = item.suggestedFilename
-        panel.title = "Screenshot speichern"
-        panel.prompt = "Speichern"
+        panel.title = L10n.text("Save Screenshot")
+        panel.prompt = L10n.text("Save")
 
-        // Bei einer Menüleisten-App gibt es möglicherweise kein Key Window. Die
-        // Aktivierung vor begin() stellt sicher, dass der Panel-Dialog sichtbar wird.
+        // A menu bar app may not have a key window. Activating it before begin()
+        // ensures that the panel dialog is visible.
         NSApp.activate(ignoringOtherApps: true)
         panel.begin { response in
             guard response == .OK, let url = panel.url else {

@@ -6,44 +6,52 @@
   </picture>
 </h1>
 
-Ein temporärer visueller Zwischenspeicher für KI-Workflows. Nativ für macOS: Bereich aufnehmen, kurz im schwebenden Stapel sammeln und direkt weitergeben.
+A temporary visual clipboard for AI workflows. Native to macOS: capture an area, collect it in a floating stack, and drag it where you need it.
 
-## Installieren und starten
+## Install and get started
 
-Lade das notarisierte DMG der aktuellen Version von der [Releases-Seite](https://github.com/twdnhfr/snappile/releases) und ziehe SnapPile nach Programme. Alternativ baust du die App selbst, siehe [Entwickeln](#entwickeln). SnapPile sitzt in der Menüleiste und hat kein Dock-Symbol. Beim ersten Start führt ein eigener Onboarding-Bildschirm durch die macOS-Freigaben. Die erste Aufnahme ist erst nach bestätigtem Bildschirmzugriff möglich. Die Einrichtung ist später über das Menü erneut erreichbar.
+Download the notarized DMG from [Releases](https://github.com/twdnhfr/snappile/releases) and drag SnapPile into Applications. You can also [build it yourself](#development). SnapPile lives in the menu bar and does not show a Dock icon. On first launch, onboarding guides you through macOS permissions. Screen access must be granted before the first capture. You can reopen setup from the menu at any time.
 
-1. Über **Bildschirm freigeben …** im Onboarding oder **Bildschirmaufnahme → Erlauben …** in den Einstellungen die macOS-Freigabe für SnapPile aktivieren. Falls macOS einen Neustart der App verlangt, SnapPile beenden und erneut öffnen.
-2. Optional **Eingabeüberwachung → Erlauben …** aktivieren, damit linke und rechte Option-Taste zusammen die Aufnahme auslösen können. Das Ersatz-Kürzel benötigt diese Freigabe nicht. Der Option-Hotkey wertet die links-/rechtsspezifischen Modifier-Flags des jeweiligen Ereignisses aus.
-3. **⌃⌥S** drücken oder im Menü **Bereich aufnehmen** wählen. Einen Bereich ziehen; währenddessen **Leertaste halten**, um die ganze Box zu verschieben. Nach Loslassen der Leertaste wieder die Größe anpassen. **Return** übernimmt die aktuelle Auswahl, **Esc** bricht ab.
-4. Das Bild erscheint am Bildschirmrand. Auf die Karte klicken öffnet die Vorschau; Ziehen übergibt das Original an ein kompatibles Ziel.
+1. Use **Allow Screen Access…** in onboarding or **Screen Recording → Allow…** in Settings to grant screen access. If macOS asks you to restart SnapPile, quit and reopen it.
+2. Optionally enable **Input Monitoring → Allow…** to capture by pressing the left and right Option keys together. The fallback shortcut does not need this permission. The double-Option shortcut tracks each key using the event's left/right modifier flags.
+3. Press **⌃⌥S** or choose **Capture Area** from the menu. Drag to select an area; **hold Space** to move the entire selection. Release Space to resize it again. **Return** confirms the current selection; **Esc** cancels.
+4. The screenshot appears at the edge of your screen. Click the card to preview it, or drag it into a compatible app to transfer the original image.
 
-## MVP-Funktionen
+## Features
 
-- Bereichsauswahl auf einem beliebigen angeschlossenen Bildschirm; eine Aufnahme bleibt auf den Bildschirm beschränkt, auf dem die Auswahl begonnen wurde.
-- Floating Panel ohne Fokuswechsel, mit bis zu drei versetzten Karten und Zähler für weitere Bilder. Klick auf den Zähler öffnet oder schließt die Liste des gesamten Stapels. Jede Vorschau ist 175 × 175 Punkte groß und zeigt einen zentrierten, quadratischen Ausschnitt ohne Füllflächen. Das vollständige Original bleibt beim Öffnen, Kopieren, Speichern und Ziehen erhalten. Overlay-Icons dienen zum Kopieren, Speichern, Anheften und Löschen.
-- Original-PNG kopieren, als PNG speichern, löschen oder anheften.
-- Im eingeklappten Stapel per Trackpad oder Mausrad vor- und zurückblättern, horizontal oder vertikal. Der Zähler zeigt die aktuelle Position. Nach dem letzten Bild folgt wieder das erste. Eine Trackpad-Geste wechselt höchstens ein Bild; ihre Trägheit wird ignoriert. In der aufgeklappten Liste wird normal gescrollt. Neue Aufnahmen erscheinen vorne, das Blättern ändert die Reihenfolge und Lebensdauer der Bilder nicht.
-- Drag-and-drop mit einer vorhandenen temporären PNG-Datei und den Original-PNG-Daten als alternative Darstellung desselben Drag-Items. Dadurch können auch Ziele mit klassischem Dateidrop das Bild übernehmen.
-- Konfigurierbares Ersatz-Kürzel: Buchstaben, Ziffern und F-Tasten mit Command, Control, Option und/oder Shift. Konflikte werden angezeigt; das bisherige Kürzel bleibt bei einem fehlgeschlagenen Wechsel aktiv.
-- Aufbewahrung: 5, 15, 30, 60 oder 120 Minuten; Standard 30 Minuten. Ablaufprüfung alle fünf Sekunden und nach dem Aufwachen.
-- Limit: 5, 10, 20 oder 50 Bilder; Standard 20. Zusätzlich höchstens 256 MiB komprimierte PNG-Daten im Stapel.
-- Position links oder rechts; neue Aufnahmen platzieren den Stapel auf dem verwendeten Bildschirm.
+- Select an area on any connected display. A capture stays on the display where the selection began.
+- A floating panel that does not steal focus, with up to three offset cards and a counter. Click the counter to expand or collapse the full stack. Each preview is a centered **175 × 175-point square crop**, without padding. Opening, copying, saving, and dragging always use the complete original. Small overlay icons provide Copy, Save, Pin, and Delete.
+- Copy the original PNG, save it as a PNG file, pin it, or delete it.
+- Browse the collapsed stack with a trackpad or mouse wheel, horizontally or vertically. The counter shows the current position, and browsing wraps after the last image. Each trackpad gesture moves by at most one image; momentum is ignored. The expanded list scrolls normally. New captures appear first; browsing does not change their order or lifetime.
+- Drag and drop using an existing temporary PNG file, with the original PNG data as an alternative representation of the same item. This also supports apps that expect a traditional file drop.
+- Configure the fallback shortcut using letters, numbers, or function keys with Command, Control, Option, and/or Shift. Conflicts are shown, and the previous shortcut stays active if a change fails.
+- Retention: 5, 15, 30, 60, or 120 minutes; 30 minutes by default. Expiry is checked every five seconds and after wake.
+- Stack limit: 5, 10, 20, or 50 images; 20 by default. Compressed PNG data in the stack is also limited to 256 MiB.
+- Choose the left or right edge. New captures place the stack on the display used for the capture.
 
-## Lebensdauer der Bilder
+## Image lifetime
 
-Aufnahmen liegen zunächst ausschließlich als komprimierte PNG-Daten im Speicher; Vorschaubilder sind auf 520 Pixel Kantenlänge begrenzt. Es gibt keine Datenbank und keine Cloud. Einstellungen werden dauerhaft in den macOS-Benutzereinstellungen gespeichert.
+Captures initially exist only as compressed PNG data in memory. Thumbnails are limited to a maximum edge length of 520 pixels. There is no database or cloud service. Preferences are stored in macOS user defaults.
 
-Erst beim Ziehen erstellt SnapPile eine PNG in einem Unterverzeichnis des benutzereigenen Temp-Verzeichnisses, benannt nach der Bundle-ID mit dem Suffix `-drag`. Die Verzeichnisse sind nur für den aktuellen Benutzer zugänglich. Wiederholtes Ziehen derselben Aufnahme verwendet dieselbe Datei. Nach Ende eines Drags bleibt sie noch 30 Minuten verfügbar, damit Empfänger sie verzögert einlesen können; die Bereinigung läuft alle fünf Sekunden. Aktive Drags sind davon ausgenommen. Beim Beenden werden alle eigenen Exportdateien gelöscht. Nach einem Absturz räumt der nächste Start verwaiste Sitzungsverzeichnisse auf. Pins schützen die Aufnahme im Stapel, verlängern aber nicht die Lebensdauer einer Exportdatei.
+Starting a drag creates a PNG in a private subdirectory of the user's temporary directory, named after the bundle identifier with a `-drag` suffix. Only the current user can access these directories. Dragging the same capture again reuses its file. After a drag ends, the file remains available for 30 minutes so receivers can read it asynchronously; cleanup runs every five seconds. Active drags are exempt from cleanup. Quitting removes all export files owned by that session. After a crash, the next launch cleans up abandoned session directories. Pins protect images in the stack but do not extend an export file's lifetime.
 
-Der temporäre Export ist auf 50 Dateien und 256 MiB begrenzt. Ist der Platz noch durch laufende oder kürzlich beendete Übergaben belegt, wird ein neuer Drag mit einer Meldung abgelehnt. Kopieren und explizites Speichern bleiben möglich. Eine Exportdatei wird nicht schon beim Loslassen oder beim Löschen ihrer Karte entfernt, weil das Ziel sie noch lesen kann.
+Temporary exports are limited to 50 files and 256 MiB. If active or recent transfers still occupy that space, a new drag is declined with an explanation. Copying and explicit saving remain available. An export file is not deleted immediately after dropping or deleting its card, because the receiving app may still need to read it.
 
-Bei Platzmangel verschwinden zuerst die ältesten ungepinnten Bilder. Pins verhindern Ablauf und automatisches Verwerfen. Belegen Pins den gesamten Platz, wird eine neue Aufnahme mit einer Meldung abgelehnt. Beim manuellen Löschen oder Beenden der App verschwinden auch Pins. Nach Lösen eines Pins gilt weiterhin das ursprüngliche Aufnahmealter.
+When the stack is full, the oldest unpinned images are removed first. Pins prevent expiry and automatic removal. If pinned images occupy all available space, a new capture is declined with an explanation. Manual deletion and quitting also discard pinned images. Unpinning restores the original capture-based expiry time.
 
-Das 256-MiB-Limit bezieht sich auf PNG-Daten, nicht auf den gesamten Prozessspeicher: Thumbnails, Aufnahme und geöffnete Vollbildvorschau benötigen zusätzlich Speicher. macOS kann Arbeitsspeicher auslagern. Kopierte, gespeicherte oder an andere Apps übergebene Bilder unterliegen deren eigener Aufbewahrung; SnapPile kann sie dort nicht zurückholen.
+The 256 MiB limit applies to PNG data, not total process memory: thumbnails, capture operations, and open full-size previews need additional memory. macOS may swap memory to disk. Images copied, saved, or transferred to another app follow that destination's retention rules; SnapPile cannot remove those copies.
 
-## Entwickeln
+## Language and localization
 
-Voraussetzung: macOS 14 oder neuer und eine Toolchain ab Swift 5.10 (Xcode 15.3). Keine Drittanbieter-Abhängigkeiten.
+Starting with version 0.1.4, English is the app's base and fallback language. This includes menus, onboarding, settings, accessibility labels, capture hints, and errors. macOS selects from the translations shipped with an app; it does not automatically translate its interface. SnapPile currently includes English only, so it also falls back to English when the preferred system language is different.
+
+App and core strings use `L10n.text` and `L10n.format`, backed by `Sources/SnapPileCore/Resources/en.lproj/Localizable.strings`. Complete sentences use format placeholders rather than string fragments, allowing translations to reorder their arguments. Permission descriptions live in `Support/en.lproj/InfoPlist.strings`.
+
+To add a language, provide a matching `.lproj/Localizable.strings` under the core resources and an `.lproj/InfoPlist.strings` under `Support`, then add its language code to `CFBundleLocalizations` in `Support/Info.plist`. Keep localization keys and format placeholder types intact. The build packages both resource bundles and the permission strings; it does not require the source checkout at runtime. Keep `defaultLocalization` and `CFBundleDevelopmentRegion` set to `en` for fallback.
+
+## Development
+
+Requires macOS 14 or later and Swift 5.10 or later (Xcode 15.3). No third-party dependencies.
 
 ```sh
 swift test
@@ -51,51 +59,52 @@ bash scripts/build-app.sh
 open outputs/SnapPile.app
 ```
 
-Render-Tests legen Vergleichsbilder unter `$TMPDIR/SnapPileTests` ab, nicht im Repository.
+Render tests write comparison images to `$TMPDIR/SnapPileTests`, outside the repository. Test images are synthetic.
 
-Die Formatierung ist in `.swift-format` festgelegt. Vor einem Commit `swift format --in-place --recursive Sources Tests Package.swift scripts/*.swift` ausführen. Die CI unter `.github/workflows/ci.yml` prüft bei jedem Push Formatierung, Build, Tests und das ad hoc signierte App-Bundle.
+Formatting is configured in `.swift-format`. Before committing, run `swift format --in-place --recursive Sources Tests Package.swift scripts/*.swift`. The workflow in `.github/workflows/ci.yml` checks formatting, builds the project, runs tests, and builds an ad hoc signed app bundle on every push to `main` and on pull requests.
 
-Der lokale Build erzeugt eine App für die Architektur des ausführenden Macs. Ohne gesetztes `SNAPPILE_SIGNING_IDENTITY` wird genau eine gültige Identität vom Typ `Developer ID Application:` automatisch verwendet. Gibt es mehrere passende Identitäten, bricht der Build mit einer Aufforderung zur expliziten Auswahl ab. Gibt es keine, wird mit einer Warnung ad hoc signiert. Mit `SNAPPILE_SIGNING_IDENTITY` lässt sich die Identität explizit setzen; `SNAPPILE_SIGNING_IDENTITY=-` erzwingt bewusst eine ad-hoc-Signatur. Dieser lokale Build ist nicht notarisiert. Das geprüfte Archiv liegt zusätzlich in `outputs/SnapPile-macOS.zip`.
+A local build targets the current Mac's architecture. If `SNAPPILE_SIGNING_IDENTITY` is unset, the script automatically uses a single valid `Developer ID Application:` identity. Multiple matching identities require an explicit selection. If none is available, the script warns and uses ad hoc signing. Set `SNAPPILE_SIGNING_IDENTITY` to choose an identity; set `SNAPPILE_SIGNING_IDENTITY=-` to explicitly request ad hoc signing. Local builds are not notarized. A verified archive is also written to `outputs/SnapPile-macOS.zip`.
 
-### Signierter und notarisierter Production-Build
+### Signed and notarized production build
 
 ```sh
-NOTARY_PROFILE=mein-schluesselbundprofil bash scripts/build-app.sh production
+NOTARY_PROFILE=my-keychain-profile bash scripts/build-app.sh production
 ```
 
-Voraussetzungen sind eine gültige Developer-ID-Application-Identität und ein bereits eingerichtetes `notarytool`-Schlüsselbundprofil für das zugehörige Apple-Developer-Team. Zugangsdaten gehören ausschließlich in den Schlüsselbund; `NOTARY_PROFILE` enthält nur dessen Profilnamen. Der Production-Modus akzeptiert keine ad-hoc-Signatur.
+Requires a valid Developer ID Application identity and an existing `notarytool` keychain profile for the corresponding Apple Developer team. Credentials belong in the keychain; `NOTARY_PROFILE` contains only the profile name. Production builds reject ad hoc signing.
 
-Der Build erstellt eine Universal-App für Apple Silicon und Intel, signiert mit Hardened Runtime und sicherem Zeitstempel und übermittelt App sowie DMG an Apples Notarisierungsdienst. Nach erfolgreicher Prüfung werden die Tickets angeheftet. Signatur, Ticket und Gatekeeper-Freigabe werden auch für die exportierte App und ein erneut entpacktes ZIP geprüft. Dieser Ablauf folgt [Apples Notarisierungsverfahren](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
+The script builds a universal app for Apple Silicon and Intel, signs it with Hardened Runtime and a secure timestamp, and submits both the app and DMG to Apple's notarization service. Accepted tickets are stapled to the artifacts. It checks the signature, ticket, and Gatekeeper acceptance for the exported app and an extracted copy of the ZIP, following [Apple's notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
 
-Die fertigen Dateien liegen getrennt von lokalen Builds in `outputs/production/`: `SnapPile.app`, `SnapPile-macOS.zip`, `SnapPile-<Version>.dmg` und die beiden Notarisierungsberichte. Das DMG enthält eine Verknüpfung zu Programme zum Installieren per Ziehen. Der Build installiert oder veröffentlicht nichts automatisch. Eine laufende SnapPile-Instanz vor dem Austausch beenden; dabei wird ihr temporärer Stapel verworfen.
+Production artifacts are separate from local builds in `outputs/production/`: `SnapPile.app`, `SnapPile-macOS.zip`, `SnapPile-<version>.dmg`, and the two notarization reports. The DMG includes an Applications shortcut for drag-to-install. The script does not install or publish automatically. Quit a running SnapPile instance before replacing it; quitting discards its temporary stack.
 
-Wenn eine eingeschaltete Eingabeüberwachungs- oder Bildschirmaufnahme-Freigabe nach einem Signaturwechsel veraltet ist, SnapPile in den macOS-Einstellungen aus beiden Freigabelisten entfernen, `/Applications/SnapPile.app` erneut hinzufügen und SnapPile neu starten.
+If Screen Recording or Input Monitoring remains enabled in macOS but stops working after a signing identity change, remove SnapPile from both permission lists, add `/Applications/SnapPile.app` again, and restart it.
 
-Für Oberflächentests lässt sich ein leer gestarteter Prozess mit vier synthetischen Beispielbildern öffnen:
+To launch with four synthetic images for UI testing:
 
 ```sh
 open outputs/SnapPile.app --args --demo
 ```
 
-Demo-Bilder sind ausdrücklich als Beispiel gekennzeichnet. Dieser Modus ist ausschließlich für Tests; normal startet der Stapel leer. Vor einem erneuten Demo-Start eine bereits laufende Instanz über das Menü beenden.
+Demo images are explicitly labeled as examples. This mode is for testing only; a normal launch starts with an empty stack. Quit any existing instance from its menu before launching demo mode again.
 
-## Aufbau
+## Project structure
 
-- `Sources/SnapPile`: AppKit-Lebenszyklus, SwiftUI-Oberflächen, Menüleiste und Panels.
-- `Sources/SnapPileCore`: Aufnahme, Auswahl, Hotkeys, Speicher, Einstellungen und Bildübergabe.
-- `Tests/SnapPileCoreTests`: synthetische Regressionstests ohne echte Bildschirmdaten.
-- `Tests/SnapPileAppTests`: Layout- und Navigationstests für Stapel und Menü, ebenfalls mit synthetischen Bildern.
-- `Support/Info.plist`: App-Bundle und Berechtigungstexte.
-- `Sources/SnapPile/Resources`: App-Icon für die Oberfläche, farbige Bildmarke und monochromes Menüleistensymbol.
-- `Support/Brand`: Icon-Master und skalierbare Logos für helle und dunkle Hintergründe; Details unter [Branding](Support/Brand/README.md).
-- `scripts/build-app.sh`: lokaler App-Build sowie signierter und notarisierter Production-Build; `scripts/make-icon.swift` erzeugt das Iconset aus dem PNG-Master. `scripts/make-brand.swift` erzeugt die README-Logos aus der Bildmarke mit eingebetteten Buchstabenkonturen.
+- `Sources/SnapPile`: AppKit lifecycle, SwiftUI views, menu bar, and panels.
+- `Sources/SnapPileCore`: capture, selection, shortcuts, storage, preferences, image transfer, and localization.
+- `Sources/SnapPileCore/Resources`: localized interface strings, with English as the base language.
+- `Tests/SnapPileCoreTests`: regression tests using synthetic data.
+- `Tests/SnapPileAppTests`: synthetic stack and menu layout/navigation tests.
+- `Support/Info.plist` and `Support/*.lproj`: app metadata and localized permission descriptions.
+- `Sources/SnapPile/Resources`: interface icon, color brand mark, and monochrome menu bar mark.
+- `Support/Brand`: icon master and scalable light/dark logos; see [Branding](Support/Brand/README.md).
+- `scripts/build-app.sh`: local and signed/notarized production builds. `scripts/make-icon.swift` creates an iconset from the PNG master; `scripts/make-brand.swift` generates the README logos with embedded letter outlines.
 
-## Grenzen von Version 0.1
+## Version 0.1 limitations
 
-Weitere vorgemerkte Funktionen stehen in [BACKLOG.md](BACKLOG.md).
+Tracked features are listed in [BACKLOG.md](BACKLOG.md).
 
-Keine Bildbearbeitung, Cloud, Anmeldung, Datenbank oder Mehrfachauswahl. Bildschirmübergreifende Auswahl und ein gemeinsamer Drag mehrerer Bilder sind noch nicht enthalten. Die Annahme von Drag-and-drop hängt vom Zielprogramm ab; Kopieren und PNG-Speichern bleiben weitere Übergabewege. Ein erfolgreicher Production-Build bestätigt Signatur und Notarisierung; er ersetzt keinen Funktionstest auf einem Intel-Mac oder in jedem Drag-Empfänger.
+No image editing, cloud service, accounts, database, or multiple selection. Selection across displays and dragging multiple images together are not supported yet. Drag acceptance depends on the receiving app; copying and saving a PNG provide alternative transfer options. A successful production build verifies signing and notarization, not functionality on an Intel Mac or in every possible drop target.
 
-## Lizenz
+## License
 
-MIT, siehe [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

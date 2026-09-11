@@ -21,17 +21,18 @@ enum SnapPileMain {
         let mainMenu = NSMenu()
         let appMenu = NSMenu()
         appMenu.addItem(
-            withTitle: "SnapPile beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+            withTitle: L10n.text("Quit SnapPile"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let menuItem = NSMenuItem()
         menuItem.submenu = appMenu
         mainMenu.addItem(menuItem)
-        let editMenu = NSMenu(title: "Bearbeiten")
+        let editMenu = NSMenu(title: L10n.text("Edit"))
         for (title, action, key) in [
-            ("Kopieren", "copy:", "c"), ("Einfügen", "paste:", "v"), ("Alles auswählen", "selectAll:", "a"),
+            (L10n.text("Copy"), "copy:", "c"), (L10n.text("Paste"), "paste:", "v"),
+            (L10n.text("Select All"), "selectAll:", "a"),
         ] {
             editMenu.addItem(withTitle: title, action: Selector(action), keyEquivalent: key)
         }
-        let editItem = NSMenuItem(title: "Bearbeiten", action: nil, keyEquivalent: "")
+        let editItem = NSMenuItem(title: L10n.text("Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = editMenu
         mainMenu.addItem(editItem)
         app.mainMenu = mainMenu
@@ -241,7 +242,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
     func applyShortcut(keyCode: UInt32, modifiers: UInt32) -> Bool {
         guard modifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
-            shortcutError = "Bitte mindestens ⌘, ⌃ oder ⌥ wählen."
+            shortcutError = L10n.text("Choose at least ⌘, ⌃, or ⌥.")
             return false
         }
         do {
@@ -262,11 +263,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         refreshPermissions()
         guard screenPermission else {
             showOnboarding()
-            notify("Bitte erlaube zuerst die Bildschirmaufnahme.", error: true)
+            notify(L10n.text("Allow screen recording first."), error: true)
             return
         }
         if store.items.count >= settings.maxItems && store.items.allSatisfy(\.isPinned) {
-            notify("Der Stapel ist voll. Löse einen Pin oder lösche ein Bild.", error: true)
+            notify(L10n.text("The pile is full. Unpin or delete an image."), error: true)
             showStack()
             return
         }
@@ -293,7 +294,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                         pngData: image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
                     self.stackController?.setScreen(displayID: result.displayID)
                     self.isExpanded = false
-                    self.notify("Im Stapel · bereit zum Ziehen")
+                    self.notify(L10n.text("In the pile · ready to drag"))
                 } catch {
                     self.notify(error.localizedDescription, error: true)
                     if self.store.items.isEmpty { self.showSettings() }
@@ -327,13 +328,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     func copy(_ id: UUID) {
         guard let item = store.item(id: id) else { return }
         let copied = ImageTransfer.copy(item)
-        notify(copied ? "Bild kopiert" : "Kopieren fehlgeschlagen", error: !copied)
+        notify(copied ? L10n.text("Image copied") : L10n.text("Copy failed"), error: !copied)
     }
     func save(_ id: UUID) {
         guard let item = store.item(id: id) else { return }
         ImageTransfer.save(item) { [weak self] result in
             switch result {
-            case .success(let url): if url != nil { self?.notify("PNG gespeichert") }
+            case .success(let url): if url != nil { self?.notify(L10n.text("PNG saved")) }
             case .failure(let error): self?.notify(error.localizedDescription, error: true)
             }
         }
@@ -348,7 +349,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 560, height: height), styleMask: [.titled, .closable],
                 backing: .buffered, defer: false)
-            window.title = "Willkommen bei SnapPile"
+            window.title = L10n.text("Welcome to SnapPile")
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentView = NSHostingView(rootView: OnboardingView(model: self))
@@ -360,14 +361,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         onboardingWindow?.makeKeyAndOrderFront(nil)
     }
     func dismissOnboarding() {
-        // "Später" counts as completed; a missing screen permission still reopens the onboarding on launch.
+        // "Later" counts as completed; a missing screen permission still reopens onboarding on launch.
         settings.hasCompletedOnboarding = true
         onboardingWindow?.orderOut(nil)
     }
     func finishOnboardingAndCapture() {
         refreshPermissions()
         guard screenPermission else {
-            notify("Die Bildschirmfreigabe fehlt noch.", error: true)
+            notify(L10n.text("Screen recording permission is still required."), error: true)
             return
         }
         settings.hasCompletedOnboarding = true
@@ -397,7 +398,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 880, height: 630),
             styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-        window.title = "SnapPile · Vorschau"
+        window.title = L10n.text("SnapPile · Preview")
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.minSize = NSSize(width: 480, height: 360)

@@ -8,7 +8,7 @@ let markURL = root.appendingPathComponent("Sources/SnapPile/Resources/BrandMark.
 let destination = root.appendingPathComponent("Support/Brand", isDirectory: true)
 let mark = try String(contentsOf: markURL, encoding: .utf8)
 guard let contentStart = mark.firstIndex(of: ">"), let contentEnd = mark.range(of: "</svg>") else {
-    fatalError("BrandMark.svg enthält kein SVG-Dokument.")
+    fatalError("BrandMark.svg does not contain an SVG document.")
 }
 let markContent = String(mark[mark.index(after: contentStart)..<contentEnd.lowerBound])
 let baseFont = NSFont.systemFont(ofSize: 84, weight: .semibold)

@@ -109,8 +109,9 @@ public final class HotKeyController {
                 return Unmanaged.passUnretained(event)
             }, userInfo: Unmanaged.passUnretained(self).toOpaque())
         guard let tap else {
-            optionMonitoringError =
-                "Der Option-Hotkey konnte nicht gestartet werden. Starte SnapPile nach der Freigabe neu. Das Ersatz-Kürzel funktioniert weiterhin."
+            optionMonitoringError = L10n.text(
+                "The Option hotkey could not be started. Restart SnapPile after granting permission. The fallback shortcut will continue to work."
+            )
             return
         }
         optionMonitoringError = nil
@@ -144,7 +145,7 @@ public enum HotKeyError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .registrationFailed(let status):
-            return "Tastenkürzel konnte nicht registriert werden (OSStatus \(status))."
+            return L10n.format("The keyboard shortcut could not be registered (OSStatus %d).", status)
         }
     }
 }

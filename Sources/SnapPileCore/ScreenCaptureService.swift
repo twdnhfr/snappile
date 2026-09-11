@@ -53,11 +53,11 @@ public enum ScreenCaptureError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .permissionDenied: return "Die Bildschirmaufnahme-Berechtigung fehlt."
-        case .invalidSelection: return "Der ausgewählte Bereich ist ungültig."
-        case .displayUnavailable: return "Der ausgewählte Bildschirm ist nicht verfügbar."
-        case .captureFailed: return "Der Bildschirm konnte nicht aufgenommen werden."
-        case .pngEncodingFailed: return "Das aufgenommene Bild konnte nicht als PNG gespeichert werden."
+        case .permissionDenied: return L10n.text("Screen recording permission is missing.")
+        case .invalidSelection: return L10n.text("The selected area is invalid.")
+        case .displayUnavailable: return L10n.text("The selected display is unavailable.")
+        case .captureFailed: return L10n.text("The screen could not be captured.")
+        case .pngEncodingFailed: return L10n.text("The captured image could not be encoded as PNG.")
         }
     }
 }

@@ -14,9 +14,9 @@ public enum ScreenshotDragError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .capacityExceeded:
-            return "Der temporäre Bildspeicher ist voll. Speichere das Bild oder versuche es später erneut."
+            return L10n.text("Temporary image storage is full. Save the image or try again later.")
         case .preparationFailed:
-            return "Das Bild konnte nicht zum Ziehen vorbereitet werden. Kopieren oder Speichern ist weiterhin möglich."
+            return L10n.text("The image could not be prepared for dragging. Copying or saving is still available.")
         }
     }
 }

@@ -107,7 +107,7 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawInstruction() {
-        let text = "Bereich auswählen  ·  Leertaste verschieben  ·  Esc abbrechen"
+        let text = L10n.text("Select area  ·  Space to move  ·  Esc to cancel")
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.white,
         ]

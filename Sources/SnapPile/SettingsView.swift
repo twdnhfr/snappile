@@ -21,17 +21,21 @@ struct SettingsView: View {
             HStack(alignment: .center, spacing: 15) {
                 BrandIcon().frame(width: 66, height: 66)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("SnapPile").font(.system(size: 27, weight: .semibold, design: .rounded))
-                    Text("Kurz festhalten. Einfach weitergeben.").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(L10n.text("SnapPile")).font(.system(size: 27, weight: .semibold, design: .rounded))
+                    Text(L10n.text("Capture now. Share in seconds.")).font(.system(size: 12)).foregroundStyle(
+                        .secondary)
                 }
                 Spacer()
-                Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Entwicklung")
-                    .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
-                    .padding(.horizontal, 8).padding(.vertical, 4).background(.primary.opacity(0.05), in: Capsule())
+                Text(
+                    Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+                        ?? L10n.text("Development")
+                )
+                .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                .padding(.horizontal, 8).padding(.vertical, 4).background(.primary.opacity(0.05), in: Capsule())
             }.padding(.horizontal, 26).padding(.top, 24).padding(.bottom, 18)
             Button(action: model.beginCapture) {
                 HStack {
-                    Label("Bereich aufnehmen", systemImage: "viewfinder").fontWeight(.semibold)
+                    Label(L10n.text("Capture Area"), systemImage: "viewfinder").fontWeight(.semibold)
                     Spacer()
                     Text(settings.shortcutLabel).font(.system(.body, design: .rounded)).opacity(0.85)
                 }.padding(.horizontal, 8).frame(height: 32)
@@ -40,70 +44,70 @@ struct SettingsView: View {
             Form {
                 Section {
                     permissionRow(
-                        "Bildschirmaufnahme", subtitle: "Für den von dir markierten Bereich",
+                        L10n.text("Screen Recording"), subtitle: L10n.text("For the area you select"),
                         granted: model.screenPermission, action: model.requestScreenPermission)
                     if settings.doubleOptionEnabled {
                         permissionRow(
-                            "Eingabeüberwachung", subtitle: "Für linke + rechte Option-Taste",
+                            L10n.text("Input Monitoring"), subtitle: L10n.text("For the left + right Option keys"),
                             granted: model.inputPermission, action: model.requestInputPermission)
                     }
                     if !model.screenPermission || (settings.doubleOptionEnabled && !model.inputPermission) {
-                        Text("Bereits in macOS erlaubt? Status aktualisieren oder SnapPile neu starten.")
+                        Text(L10n.text("Already allowed in macOS? Refresh the status or restart SnapPile."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 } header: {
                     HStack {
-                        Text("Berechtigungen")
+                        Text(L10n.text("Permissions"))
                         Spacer()
-                        Button("Status aktualisieren", action: model.refreshPermissions)
+                        Button(L10n.text("Refresh Status"), action: model.refreshPermissions)
                             .buttonStyle(.plain)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .help("Berechtigungsstatus erneut prüfen")
-                            .accessibilityLabel("Berechtigungsstatus aktualisieren")
+                            .help(L10n.text("Check permission status again"))
+                            .accessibilityLabel(L10n.text("Refresh permission status"))
                     }
                 }
                 Section {
-                    Toggle("Linke + rechte Option-Taste", isOn: $settings.doubleOptionEnabled).tint(pileAccent)
+                    Toggle(L10n.text("Left + right Option keys"), isOn: $settings.doubleOptionEnabled).tint(pileAccent)
                     if let issue = model.optionMonitoringIssue {
                         Text(issue).font(.caption).foregroundStyle(.orange)
                     }
                     HStack(spacing: 6) {
-                        Text("Ersatz-Kürzel")
+                        Text(L10n.text("Fallback Shortcut"))
                         Spacer()
                         modifierToggle("⌃", mask: UInt32(controlKey))
                         modifierToggle("⌥", mask: UInt32(optionKey))
                         modifierToggle("⇧", mask: UInt32(shiftKey))
                         modifierToggle("⌘", mask: UInt32(cmdKey))
-                        Picker("Taste", selection: $shortcutCode) {
+                        Picker(L10n.text("Key"), selection: $shortcutCode) {
                             ForEach(AppSettings.keys, id: \.code) { Text($0.label).tag($0.code) }
                         }
                         .labelsHidden().frame(width: 68)
-                        Button(shortcutSaved ? "✓" : "Setzen") {
+                        Button(shortcutSaved ? "✓" : L10n.text("Set")) {
                             shortcutSaved = model.applyShortcut(keyCode: shortcutCode, modifiers: shortcutMods)
                         }.fixedSize().frame(minWidth: 56)
                     }
                     if let error = model.shortcutError { Text(error).font(.caption).foregroundStyle(.orange) }
                 } header: {
-                    Text("Aufnahme")
+                    Text(L10n.text("Capture"))
                 }
                 Section {
-                    Picker("Automatisch löschen", selection: $settings.expiryMinutes) {
-                        ForEach([5, 15, 30, 60, 120], id: \.self) { Text("Nach \($0) Minuten").tag($0) }
+                    Picker(L10n.text("Delete Automatically"), selection: $settings.expiryMinutes) {
+                        ForEach([5, 15, 30, 60, 120], id: \.self) { Text(L10n.format("After %ld minutes", $0)).tag($0) }
                     }
-                    Picker("Maximal im Stapel", selection: $settings.maxItems) {
-                        ForEach([5, 10, 20, 50], id: \.self) { Text("\($0) Screenshots").tag($0) }
+                    Picker(L10n.text("Maximum in Pile"), selection: $settings.maxItems) {
+                        ForEach([5, 10, 20, 50], id: \.self) { Text(L10n.format("%ld Screenshots", $0)).tag($0) }
                     }
-                    Picker("Bildschirmrand", selection: $settings.side) {
+                    Picker(L10n.text("Screen Edge"), selection: $settings.side) {
                         ForEach(StackSide.allCases) { Text($0.label).tag($0) }
                     }.pickerStyle(.segmented)
                     if store.items.count > settings.maxItems {
-                        Text("Pins belegen mehr als das Limit. Löse Pins, um Platz freizugeben.")
+                        Text(L10n.text("Pins can exceed the limit. Unpin items to free space."))
                             .font(.caption).foregroundStyle(.orange)
                     }
                 } header: {
-                    Text("Dein Stapel")
+                    Text(L10n.text("Your Pile"))
                 }
             }.formStyle(.grouped).scrollContentBackground(.hidden)
             if let message = model.message {
@@ -112,21 +116,26 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 26).padding(.bottom, 10)
             }
             VStack(alignment: .leading, spacing: 5) {
-                Label("Nur für den Moment.", systemImage: "clock").font(.system(size: 11, weight: .semibold))
+                Label(L10n.text("Just for the moment."), systemImage: "clock").font(
+                    .system(size: 11, weight: .semibold))
                 Text(
-                    "Pins schützen vor Ablauf. Beim Ziehen entsteht eine temporäre PNG, die nach 30 Min. gelöscht wird. Beim Beenden wird alles verworfen."
+                    L10n.text(
+                        "Pins prevent expiration. Dragging creates a temporary PNG that is deleted after 30 minutes. Everything is discarded when you quit."
+                    )
                 )
                 .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 26)
             HStack {
                 Text(
-                    "\(store.items.count) Bilder · \(ByteCountFormatter.string(fromByteCount:Int64(store.totalBytes),countStyle:.memory)) PNG-Daten"
+                    L10n.format(
+                        "Images: %ld · %@ PNG data", store.items.count,
+                        ByteCountFormatter.string(fromByteCount: Int64(store.totalBytes), countStyle: .memory))
                 )
                 .font(.system(size: 10)).foregroundStyle(.secondary)
                 Spacer()
-                Button("Einrichtung …", action: model.showOnboarding)
-                Button("Stapel zeigen", action: model.showStack).disabled(store.items.isEmpty)
-                Button("Beenden") { NSApp.terminate(nil) }
+                Button(L10n.text("Setup…"), action: model.showOnboarding)
+                Button(L10n.text("Show Pile"), action: model.showStack).disabled(store.items.isEmpty)
+                Button(L10n.text("Quit")) { NSApp.terminate(nil) }
             }.controlSize(.small).padding(.horizontal, 26).padding(.vertical, 18)
         }.frame(width: 520, height: 710)
             .background(Color(nsColor: .windowBackgroundColor))
@@ -149,8 +158,8 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 5).strokeBorder(
                 shortcutMods & mask != 0 ? pileAccent.opacity(0.5) : Color.primary.opacity(0.08))
         )
-        .accessibilityLabel("Modifier \(label)")
-        .accessibilityValue(shortcutMods & mask != 0 ? "Aktiv" : "Inaktiv")
+        .accessibilityLabel(L10n.format("Modifier %@", label))
+        .accessibilityValue(shortcutMods & mask != 0 ? L10n.text("Active") : L10n.text("Inactive"))
     }
     private func permissionRow(
         _ title: String, subtitle: String, granted: Bool, action: @escaping () -> Void
@@ -164,7 +173,7 @@ struct SettingsView: View {
             if granted {
                 PermissionStatusBadge()
             } else {
-                Button("Erlauben …", action: action).controlSize(.small)
+                Button(L10n.text("Allow…"), action: action).controlSize(.small)
             }
         }
     }
@@ -183,13 +192,14 @@ struct MenuPopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 BrandMark().frame(width: 20, height: 20)
-                Text("SnapPile").font(.system(size: 16, weight: .semibold, design: .rounded))
+                Text(L10n.text("SnapPile")).font(.system(size: 16, weight: .semibold, design: .rounded))
                 Spacer()
-                Text("\(store.items.count) / \(settings.maxItems)").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(L10n.format("%ld / %ld", store.items.count, settings.maxItems)).font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
             Button(action: model.beginCapture) {
                 HStack {
-                    Label("Bereich aufnehmen", systemImage: "viewfinder")
+                    Label(L10n.text("Capture Area"), systemImage: "viewfinder")
                     Spacer()
                     Text(settings.shortcutLabel).foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity)
@@ -197,9 +207,11 @@ struct MenuPopoverView: View {
             if store.items.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "rectangle.stack").font(.system(size: 24)).foregroundStyle(.tertiary)
-                    Text("Platz für deinen nächsten Gedanken.").font(.system(size: 11, weight: .medium))
-                    Text("Bereich aufnehmen, dann direkt\nin deinen KI-Chat ziehen.").font(.system(size: 11))
-                        .foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    Text(L10n.text("Room for your next thought.")).font(.system(size: 11, weight: .medium))
+                    Text(L10n.text("Capture an area, then drag it\ndirectly into your AI chat.")).font(
+                        .system(size: 11)
+                    )
+                    .foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }.frame(maxWidth: .infinity).padding(.vertical, 10)
             } else {
                 ForEach(store.items.prefix(3)) { item in
@@ -211,31 +223,32 @@ struct MenuPopoverView: View {
                             .background(.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 5)).clipShape(
                                 RoundedRectangle(cornerRadius: 5))
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("\(item.pixelWidth) × \(item.pixelHeight)").font(.system(size: 11, weight: .medium))
+                            Text(L10n.format("%ld × %ld", item.pixelWidth, item.pixelHeight)).font(
+                                .system(size: 11, weight: .medium))
                             Text(lifetimeText(item, minutes: settings.expiryMinutes)).font(.system(size: 10))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        SmallIconButton("Kopieren", symbol: "doc.on.doc") { model.copy(item.id) }
-                        SmallIconButton("Löschen", symbol: "trash") { model.delete(item.id) }
+                        SmallIconButton(L10n.text("Copy"), symbol: "doc.on.doc") { model.copy(item.id) }
+                        SmallIconButton(L10n.text("Delete"), symbol: "trash") { model.delete(item.id) }
                     }
                 }
-                Button("Stapel zeigen (\(store.items.count))", action: model.showStack).buttonStyle(.plain)
+                Button(L10n.format("Show Pile (%ld)", store.items.count), action: model.showStack).buttonStyle(.plain)
                     .foregroundStyle(pileAccent)
             }
-            Text(model.message ?? "Temporärer Stapel · \(settings.expiryMinutes) Min. Aufbewahrung")
+            Text(model.message ?? L10n.format("Temporary pile · %ld min. retention", settings.expiryMinutes))
                 .font(.system(size: 10)).foregroundStyle(model.messageIsError ? Color.orange : Color.secondary)
                 .lineLimit(2).frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
             Divider()
             HStack {
-                Button("Einstellungen …", action: model.showSettings)
+                Button(L10n.text("Settings…"), action: model.showSettings)
                 Spacer()
                 Menu {
-                    Button("Einrichtung …", action: model.showOnboarding)
-                    Button("Ungepinntes löschen", action: model.clearUnpinned).disabled(
+                    Button(L10n.text("Setup…"), action: model.showOnboarding)
+                    Button(L10n.text("Delete Unpinned"), action: model.clearUnpinned).disabled(
                         store.items.allSatisfy(\.isPinned))
                     Divider()
-                    Button("SnapPile beenden") { NSApp.terminate(nil) }
+                    Button(L10n.text("Quit SnapPile")) { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis")
                 }.menuStyle(.borderlessButton).frame(width: 24)

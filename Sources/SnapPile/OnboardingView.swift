@@ -22,8 +22,8 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(
                         isReady
-                            ? "Alles bereit. Du kannst deine erste Aufnahme machen."
-                            : "Für die erste Aufnahme braucht SnapPile eine kurze Freigabe."
+                            ? L10n.text("All set. You can take your first capture.")
+                            : L10n.text("SnapPile needs a quick permission before your first capture.")
                     )
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -32,18 +32,21 @@ struct OnboardingView: View {
                     VStack(spacing: 10) {
                         PermissionCard(
                             number: "1",
-                            title: "Bildschirmaufnahme",
-                            badge: "ERFORDERLICH",
+                            title: L10n.text("Screen Recording"),
+                            badge: L10n.text("REQUIRED"),
                             symbol: "rectangle.dashed.badge.record",
                             tint: pileAccent,
                             granted: model.screenPermission,
                             description:
-                                "Du bestimmst bei jeder Aufnahme den Ausschnitt. SnapPile legt ihn vorübergehend in deinem Stapel ab.",
-                            buttonTitle: "Bildschirm freigeben …",
+                                L10n.text(
+                                    "You choose the area for each capture. SnapPile keeps it temporarily in your pile."),
+                            buttonTitle: L10n.text("Allow Screen Access…"),
                             action: model.requestScreenPermission,
                             refresh: model.refreshPermissions,
                             details:
-                                "Aktiviere SnapPile in den macOS-Datenschutzeinstellungen und kehre hierher zurück. Falls macOS einen Neustart verlangt, beende und öffne SnapPile erneut."
+                                L10n.text(
+                                    "Enable SnapPile in macOS Privacy settings and return here. If macOS asks you to restart, quit and reopen SnapPile."
+                                )
                         )
 
                         optionCard
@@ -79,18 +82,18 @@ struct OnboardingView: View {
                     .frame(width: 62, height: 62)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("SNAPPILE")
+                    Text(L10n.text("SNAPPILE"))
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(1.2)
                         .foregroundStyle(pileAccent)
-                    Text("Einmal freigeben.\nDann einfach festhalten.")
+                    Text(L10n.text("Grant access once.\nCapture whenever you need."))
                         .font(.system(size: 25, weight: .semibold, design: .rounded))
                         .lineSpacing(1)
                 }
             }
 
             Text(
-                "Markiere einen Ausschnitt, behalte ihn kurz im Stapel und ziehe ihn direkt dorthin, wo du ihn brauchst."
+                L10n.text("Select an area, keep it briefly in the pile, and drag it wherever you need it.")
             )
             .font(.system(size: 13))
             .foregroundStyle(.secondary)
@@ -112,16 +115,16 @@ struct OnboardingView: View {
                     .frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 7) {
-                        Text("Beide Option-Tasten")
+                        Text(L10n.text("Both Option keys"))
                             .font(.system(size: 13, weight: .semibold))
-                        Text("OPTIONAL")
+                        Text(L10n.text("OPTIONAL"))
                             .font(.system(size: 9, weight: .bold, design: .rounded))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
                             .background(.primary.opacity(0.07), in: Capsule())
                     }
-                    Text("Für das schnelle Kürzel mit linker und rechter ⌥-Taste.")
+                    Text(L10n.text("For the quick shortcut using the left and right ⌥ keys."))
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -129,13 +132,14 @@ struct OnboardingView: View {
                 Spacer(minLength: 0)
             }
 
-            Toggle("Linke + rechte Option-Taste aktivieren", isOn: $settings.doubleOptionEnabled)
+            Toggle(L10n.text("Enable left + right Option keys"), isOn: $settings.doubleOptionEnabled)
                 .toggleStyle(.switch)
                 .tint(pileAccent)
                 .font(.system(size: 11, weight: .medium))
 
             Text(
-                "Die Eingabeüberwachung erkennt ausschließlich den linken und rechten Option-Modifikator. Es werden keine Texteingaben aufgezeichnet."
+                L10n.text(
+                    "Input monitoring detects only the left and right Option modifiers. No text input is recorded.")
             )
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
@@ -145,7 +149,7 @@ struct OnboardingView: View {
                 if model.inputPermission && settings.doubleOptionEnabled {
                     PermissionStatusBadge()
                 } else if settings.doubleOptionEnabled {
-                    Button("Eingabeüberwachung freigeben …", action: model.requestInputPermission)
+                    Button(L10n.text("Allow Input Monitoring…"), action: model.requestInputPermission)
                         .controlSize(.small)
                 }
                 Spacer(minLength: 0)
@@ -154,9 +158,12 @@ struct OnboardingView: View {
             if let issue = model.optionMonitoringIssue {
                 Text(issue).font(.system(size: 10)).foregroundStyle(.orange)
             }
-            Text("Ohne diese Freigabe funktioniert das Ersatz-Kürzel \(settings.shortcutLabel) weiterhin.")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
+            Text(
+                L10n.format(
+                    "The fallback shortcut %@ continues to work without this permission.", settings.shortcutLabel)
+            )
+            .font(.system(size: 10))
+            .foregroundStyle(.tertiary)
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 13))
@@ -172,7 +179,9 @@ struct OnboardingView: View {
                     .foregroundStyle(pileAccent)
                     .padding(.top, 1)
                 Text(
-                    "Aufnahmen werden automatisch verworfen. Beim Ziehen entsteht vorübergehend eine PNG-Datei. Kein Konto, keine Cloud."
+                    L10n.text(
+                        "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud."
+                    )
                 )
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
@@ -181,15 +190,15 @@ struct OnboardingView: View {
             }
 
             HStack(spacing: 12) {
-                Button("Später", action: model.dismissOnboarding)
+                Button(L10n.text("Later"), action: model.dismissOnboarding)
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                Button("Einstellungen …", action: model.showSettings)
+                Button(L10n.text("Settings…"), action: model.showSettings)
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 Button(action: model.finishOnboardingAndCapture) {
-                    Label("Erste Aufnahme starten", systemImage: "viewfinder")
+                    Label(L10n.text("Start First Capture"), systemImage: "viewfinder")
                         .fontWeight(.semibold)
                 }
                 .buttonStyle(.borderedProminent)
@@ -197,7 +206,8 @@ struct OnboardingView: View {
                 .disabled(!model.screenPermission)
                 .keyboardShortcut(.defaultAction)
                 .accessibilityHint(
-                    model.screenPermission ? "Startet die Bereichsauswahl" : "Erst Bildschirmaufnahme erlauben")
+                    model.screenPermission ? L10n.text("Starts area selection") : L10n.text("Allow Screen Access first")
+                )
             }
             .controlSize(.large)
         }
@@ -268,12 +278,12 @@ private struct PermissionCard: View {
                     Button(buttonTitle, action: action).controlSize(.small)
                 }
                 Spacer(minLength: 0)
-                Button("Status aktualisieren", action: refresh)
+                Button(L10n.text("Refresh Status"), action: refresh)
                     .buttonStyle(.plain)
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
-                    .help("Berechtigungsstatus erneut prüfen")
-                    .accessibilityLabel("Berechtigungsstatus aktualisieren")
+                    .help(L10n.text("Check permission status again"))
+                    .accessibilityLabel(L10n.text("Refresh permission status"))
             }
 
             Text(details)
