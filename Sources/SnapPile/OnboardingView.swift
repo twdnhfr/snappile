@@ -135,9 +135,7 @@ struct OnboardingView: View {
 
             HStack(spacing: 10) {
                 if model.inputPermission && settings.doubleOptionEnabled {
-                    Label("Erlaubt", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(pileAccent)
+                    PermissionStatusBadge()
                 } else if settings.doubleOptionEnabled {
                     Button("Eingabeüberwachung freigeben …", action: model.requestInputPermission)
                         .controlSize(.small)
@@ -165,7 +163,7 @@ struct OnboardingView: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(pileAccent)
                     .padding(.top, 1)
-                Text("PNG-Bilder bleiben im Arbeitsspeicher und werden automatisch gelöscht. Kein Konto, keine Cloud.")
+                Text("Aufnahmen werden automatisch verworfen. Beim Ziehen entsteht vorübergehend eine PNG-Datei. Kein Konto, keine Cloud.")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -254,9 +252,7 @@ private struct PermissionCard: View {
 
             HStack(spacing: 10) {
                 if granted {
-                    Label("Erlaubt", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(tint)
+                    PermissionStatusBadge()
                 } else {
                     Button(buttonTitle, action: action).controlSize(.small)
                 }

@@ -41,6 +41,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @Published var messageIsError = false
     @Published var isCapturing = false
     @Published var isExpanded = false
+    @Published private(set) var selectedScreenshotID: UUID?
     @Published var screenPermission = false
     @Published var inputPermission = false
     @Published var optionMonitoringIssue: String?
@@ -58,8 +59,48 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     private var hotKeys: HotKeyController?
     private var isTerminating = false
     private var captureGeneration = UUID()
+    private var previousStackIDs: [UUID] = []
+
+    override init() {
+        super.init()
+        store.$items.map { $0.map(\.id) }.removeDuplicates().sink { [weak self] ids in
+            self?.reconcileStackSelection(ids)
+        }.store(in: &subscriptions)
+    }
+
+    var selectedStackItem: ScreenshotItem? {
+        selectedScreenshotID.flatMap { store.item(id: $0) } ?? store.items.first
+    }
+
+    var stackPosition: Int {
+        guard let item = selectedStackItem, let index = store.items.firstIndex(where: { $0.id == item.id }) else { return 0 }
+        return index + 1
+    }
+
+    private func reconcileStackSelection(_ ids: [UUID]) {
+        defer { previousStackIDs = ids }
+        guard let newest = ids.first else { selectedScreenshotID = nil; return }
+        if !previousStackIDs.contains(newest) {
+            selectedScreenshotID = newest
+        } else if let selectedScreenshotID, ids.contains(selectedScreenshotID) {
+            return
+        } else {
+            let oldIndex = selectedScreenshotID.flatMap { previousStackIDs.firstIndex(of: $0) } ?? 0
+            selectedScreenshotID = ids[min(oldIndex, ids.count - 1)]
+        }
+    }
+
+    func browseStack(by direction: Int) {
+        guard !isExpanded, store.items.count > 1, direction != 0 else { return }
+        let count = store.items.count
+        let index = max(0, stackPosition - 1)
+        let next = (index + direction % count + count) % count
+        selectedScreenshotID = store.items[next].id
+        stackController?.reposition()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        TemporaryScreenshotFiles.shared.removeExpired()
         store.maxItems = settings.maxItems
         store.expiryMinutes = settings.expiryMinutes
         hotKeys = HotKeyController(onTrigger: { [weak self] in self?.beginCapture() })
@@ -75,16 +116,25 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             DispatchQueue.main.async { self?.stackController?.reposition() }
         }.store(in: &subscriptions)
         settings.$doubleOptionEnabled.dropFirst().sink { [weak self] value in self?.hotKeys?.doubleOptionEnabled = value; self?.refreshPermissions() }.store(in: &subscriptions)
-        store.$items.sink { [weak self] items in
+        store.$items.sink { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }
+                let items = self.store.items
                 self.statusController?.updateCount(items.count)
+                self.stackController?.reposition()
                 if items.isEmpty { self.stackController?.hide(); self.isExpanded = false }
                 if let id = self.previewID, !items.contains(where: { $0.id == id }) { self.closePreview() }
             }
         }.store(in: &subscriptions)
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.store.removeExpired() }
+            Task { @MainActor in
+                guard let self else { return }
+                self.store.removeExpired()
+                TemporaryScreenshotFiles.shared.removeExpired()
+                if self.settingsWindow?.isVisible == true || self.onboardingWindow?.isVisible == true {
+                    self.refreshPermissions()
+                }
+            }
         }
         if let expiryTimer { RunLoop.main.add(expiryTimer, forMode: .common) }
         NotificationCenter.default.addObserver(self, selector: #selector(refreshPermissions), name: NSApplication.didBecomeActiveNotification, object: nil)
@@ -99,6 +149,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        refreshPermissions()
         guard !flag else { return true }
         if !settings.hasCompletedOnboarding || !screenPermission { showOnboarding() }
         else if store.items.isEmpty { showSettings() } else { showStack() }
@@ -109,8 +160,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         isTerminating = true
         captureGeneration = UUID()
         captureTask?.cancel(); messageTask?.cancel(); selection.cancel()
-        expiryTimer?.invalidate(); hotKeys?.stop(); statusController?.shutdown(); stackController?.hide(); closePreview()
+        expiryTimer?.invalidate(); hotKeys?.stop(); statusController?.shutdown(); stackController?.shutdown(); closePreview()
         store.removeAll(includingPinned: true)
+        TemporaryScreenshotFiles.shared.removeAll()
         NotificationCenter.default.removeObserver(self)
         NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
@@ -121,7 +173,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         inputPermission = hotKeys?.hasInputMonitoringPermission ?? false
         optionMonitoringIssue = hotKeys?.optionMonitoringError
     }
-    @objc private func didWake() { store.removeExpired(); refreshPermissions() }
+    @objc private func didWake() { store.removeExpired(); TemporaryScreenshotFiles.shared.removeExpired(); refreshPermissions() }
     @objc private func willSleep() { selection.cancel() }
 
     func requestScreenPermission() {
@@ -243,6 +295,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     func showSettings() {
         statusController?.close()
         onboardingWindow?.orderOut(nil)
+        refreshPermissions()
         if settingsWindow == nil {
             let window = NSWindow(contentRect: NSRect(x:0,y:0,width:520,height:710), styleMask:[.titled,.closable,.miniaturizable], backing:.buffered, defer:false)
             window.title = "SnapPile"; window.isReleasedWhenClosed = false

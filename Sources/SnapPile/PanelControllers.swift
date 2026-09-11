@@ -13,6 +13,8 @@ final class StackPanelController {
     private let panel: NSPanel
     private var displayID: CGDirectDisplayID?
     private var observer: NSObjectProtocol?
+    private var scrollMonitor: Any?
+    private var scrollGesture = StackScrollGesture()
     init(model:AppController) {
         self.model=model
         panel = FloatingPilePanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false)
@@ -21,22 +23,48 @@ final class StackPanelController {
         panel.collectionBehavior = [.canJoinAllSpaces,.fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.title = "SnapPile · Stapel"
-        panel.contentView = NSHostingView(rootView: StackView(model:model).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.top))
+        let content = NSHostingView(rootView: StackView(model:model).frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.top))
+        // The panel and its cards share one explicit layout; prevent AppKit from
+        // resizing the panel again in response to SwiftUI's intrinsic size.
+        content.sizingOptions = []
+        panel.contentView = content
         observer = NotificationCenter.default.addObserver(forName:NSApplication.didChangeScreenParametersNotification,object:nil,queue:.main) { [weak self] _ in
             Task { @MainActor in self?.reposition() }
+        }
+        // Only intercept this app's floating stack. SwiftUI buttons and native
+        // thumbnails route through the same monitor without taking key focus.
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, event.window === self.panel, self.panel.isVisible else { return event }
+            guard !self.model.isExpanded, self.model.store.items.count > 1,
+                  !self.model.isCapturing, NSEvent.pressedMouseButtons == 0 else {
+                self.scrollGesture.reset()
+                return event
+            }
+            if let direction = self.scrollGesture.step(deltaX: event.scrollingDeltaX, deltaY: event.scrollingDeltaY,
+                                                       precise: event.hasPreciseScrollingDeltas, phase: event.phase,
+                                                       momentumPhase: event.momentumPhase, timestamp: event.timestamp) {
+                self.model.browseStack(by: direction)
+            }
+            return nil
         }
     }
     func setScreen(displayID:CGDirectDisplayID) { self.displayID=displayID }
     func show() { reposition(); panel.orderFrontRegardless() }
-    func hide() { panel.orderOut(nil) }
+    func hide() { scrollGesture.reset(); panel.orderOut(nil) }
+    func shutdown() {
+        hide()
+        if let scrollMonitor { NSEvent.removeMonitor(scrollMonitor); self.scrollMonitor = nil }
+        if let observer { NotificationCenter.default.removeObserver(observer); self.observer = nil }
+    }
     func reposition() {
         let screen = NSScreen.screens.first(where: {
             ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == displayID
         }) ?? NSScreen.main ?? NSScreen.screens.first
         guard let screen else { return }
         let visible = screen.visibleFrame
-        let width:CGFloat = 312
-        let height = min(model.isExpanded ? 630 : 352, visible.height - 24)
+        let width = StackLayout.width
+        let contentHeight = StackLayout.height(items: model.store.items, expanded: model.isExpanded, frontItem: model.selectedStackItem)
+        let height = min(contentHeight, visible.height - 24)
         let x = model.settings.side == .right ? visible.maxX-width-2 : visible.minX+2
         let y = max(visible.minY+12, visible.midY-height/2)
         panel.setFrame(NSRect(x:x,y:y,width:width,height:height),display:true)
@@ -218,7 +246,7 @@ struct PreviewView:View {
                     Text(model.message ?? "Originalauflösung · Speichern oder Kopieren gibt das vollständige Bild weiter.")
                         .font(.system(size:11)).foregroundStyle(.secondary)
                     Spacer()
-                    DraggableThumbnail(item:item,onClick:{}).frame(width:62,height:37)
+                    DraggableThumbnail(item:item,onClick:{},onDragError:{ model.notify($0,error:true) }).frame(width:62,height:37)
                         .overlay(RoundedRectangle(cornerRadius:5).strokeBorder(.primary.opacity(0.15)))
                         .help("Originalbild von hier in deinen Chat ziehen")
                     Text("Ziehen").font(.system(size:10)).foregroundStyle(.secondary)

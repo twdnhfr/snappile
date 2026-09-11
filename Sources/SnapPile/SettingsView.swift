@@ -25,7 +25,8 @@ struct SettingsView: View {
                     Text("Kurz festhalten. Einfach weitergeben.").font(.system(size:12)).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("MVP 0.1").font(.system(size:10,weight:.medium)).foregroundStyle(.secondary)
+                Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Entwicklung")
+                    .font(.system(size:10,weight:.medium)).foregroundStyle(.secondary)
                     .padding(.horizontal,8).padding(.vertical,4).background(.primary.opacity(0.05),in:Capsule())
             }.padding(.horizontal,26).padding(.top,24).padding(.bottom,18)
             Button(action:model.beginCapture) {
@@ -42,7 +43,23 @@ struct SettingsView: View {
                     if settings.doubleOptionEnabled {
                         permissionRow("Eingabeüberwachung",subtitle:"Für linke + rechte Option-Taste",granted:model.inputPermission,action:model.requestInputPermission)
                     }
-                } header: { Text("Berechtigungen") }
+                    if !model.screenPermission || (settings.doubleOptionEnabled && !model.inputPermission) {
+                        Text("Bereits in macOS erlaubt? Status aktualisieren oder SnapPile neu starten.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    HStack {
+                        Text("Berechtigungen")
+                        Spacer()
+                        Button("Status aktualisieren", action: model.refreshPermissions)
+                            .buttonStyle(.plain)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .help("Berechtigungsstatus erneut prüfen")
+                            .accessibilityLabel("Berechtigungsstatus aktualisieren")
+                    }
+                }
                 Section {
                     Toggle("Linke + rechte Option-Taste",isOn:$settings.doubleOptionEnabled).tint(pileAccent)
                     if let issue = model.optionMonitoringIssue {
@@ -86,7 +103,7 @@ struct SettingsView: View {
             }
             VStack(alignment:.leading,spacing:5) {
                 Label("Nur für den Moment.",systemImage:"clock").font(.system(size:11,weight:.semibold))
-                Text("Bilder bleiben im Arbeitsspeicher. Pins schützen vor Ablauf und automatischem Verwerfen. Beim Beenden wird auch Gepinntes gelöscht.")
+                Text("Pins schützen vor Ablauf. Beim Ziehen entsteht eine temporäre PNG, die nach 30 Min. gelöscht wird. Beim Beenden wird alles verworfen.")
                     .font(.system(size:10)).foregroundStyle(.secondary).fixedSize(horizontal:false,vertical:true)
             }.frame(maxWidth:.infinity,alignment:.leading).padding(.horizontal,26)
             HStack {
@@ -99,6 +116,7 @@ struct SettingsView: View {
             }.controlSize(.small).padding(.horizontal,26).padding(.vertical,18)
         }.frame(width:520,height:710)
             .background(Color(nsColor:.windowBackgroundColor))
+            .onAppear { model.refreshPermissions() }
             .onChange(of:shortcutCode) { _,_ in shortcutSaved=false }
             .onChange(of:shortcutMods) { _,_ in shortcutSaved=false }
     }
@@ -120,7 +138,7 @@ struct SettingsView: View {
             }
             Spacer()
             if granted {
-                Label("Erlaubt",systemImage:"checkmark.circle.fill").font(.system(size:11)).foregroundStyle(pileAccent)
+                PermissionStatusBadge()
             } else { Button("Erlauben …",action:action).controlSize(.small) }
         }
     }
@@ -151,7 +169,7 @@ struct MenuPopoverView: View {
             } else {
                 ForEach(store.items.prefix(3)) { item in
                     HStack(spacing:10) {
-                        DraggableThumbnail(item:item,onClick:{ model.preview(item.id) }).frame(width:60,height:38)
+                        DraggableThumbnail(item:item,onClick:{ model.preview(item.id) },onDragError:{ model.notify($0,error:true) }).frame(width:60,height:38)
                             .background(.primary.opacity(0.04),in:RoundedRectangle(cornerRadius:5)).clipShape(RoundedRectangle(cornerRadius:5))
                         VStack(alignment:.leading,spacing:3) {
                             Text("\(item.pixelWidth) × \(item.pixelHeight)").font(.system(size:11,weight:.medium))
@@ -164,7 +182,7 @@ struct MenuPopoverView: View {
                 }
                 Button("Stapel zeigen (\(store.items.count))",action:model.showStack).buttonStyle(.plain).foregroundStyle(pileAccent)
             }
-            Text(model.message ?? "Nur im Speicher · \(settings.expiryMinutes) Min. Aufbewahrung")
+            Text(model.message ?? "Temporärer Stapel · \(settings.expiryMinutes) Min. Aufbewahrung")
                 .font(.system(size:10)).foregroundStyle(model.messageIsError ? Color.orange : Color.secondary)
                 .lineLimit(2).frame(maxWidth:.infinity,minHeight:24,maxHeight:24,alignment:.leading)
             Divider()

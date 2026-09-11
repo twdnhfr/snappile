@@ -56,18 +56,19 @@ private final class SelectionWindow: NSWindow {
     override var canBecomeMain: Bool { false }
 }
 
-private final class SelectionOverlayView: NSView {
+final class SelectionOverlayView: NSView {
     private let screenFrame: CGRect
     private let displayID: CGDirectDisplayID
     private let report: (CaptureSelection?) -> Void
-    private var start: CGPoint?
-    private var current: CGRect = .zero
+    private var drag = SelectionDragState(bounds: .zero)
+    var currentMousePoint: (() -> CGPoint)?
 
     init(screenFrame: CGRect, report: @escaping (CaptureSelection?) -> Void) {
         self.screenFrame = screenFrame
         self.displayID = (NSScreen.screens.first(where: { $0.frame == screenFrame })?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
         self.report = report
         super.init(frame: CGRect(origin: .zero, size: screenFrame.size))
+        drag = SelectionDragState(bounds: CGRect(origin: .zero, size: screenFrame.size))
         wantsLayer = true
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -76,45 +77,56 @@ private final class SelectionOverlayView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         NSColor(calibratedWhite: 0, alpha: 0.42).setFill(); bounds.fill()
-        guard !current.isEmpty else {
+        guard !drag.current.isEmpty else {
             drawInstruction(); return
         }
         NSGraphicsContext.current?.saveGraphicsState()
-        NSGraphicsContext.current?.cgContext.clear(current)
+        NSGraphicsContext.current?.cgContext.clear(drag.current)
         NSGraphicsContext.current?.restoreGraphicsState()
-        NSColor.white.setStroke(); NSBezierPath(rect: current).stroke()
-        let label = "\(Int(current.width.rounded())) × \(Int(current.height.rounded()))"
+        NSColor.white.setStroke(); NSBezierPath(rect: drag.current).stroke()
+        let label = "\(Int(drag.current.width.rounded())) × \(Int(drag.current.height.rounded()))"
         let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.white]
-        (label as NSString).draw(at: CGPoint(x: current.minX + 8, y: current.maxY + 7), withAttributes: attrs)
+        (label as NSString).draw(at: CGPoint(x: drag.current.minX + 8, y: drag.current.maxY + 7), withAttributes: attrs)
     }
 
     private func drawInstruction() {
-        let text = "Bereich auswählen  ·  Esc abbrechen"
+        let text = "Bereich auswählen  ·  Leertaste verschieben  ·  Esc abbrechen"
         let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.white]
         let size = (text as NSString).size(withAttributes: attrs)
         (text as NSString).draw(at: CGPoint(x: (bounds.width-size.width)/2, y: (bounds.height-size.height)/2), withAttributes: attrs)
     }
 
-    override func mouseDown(with event: NSEvent) { start = convert(event.locationInWindow, from: nil); current = .zero; needsDisplay = true }
+    override func mouseDown(with event: NSEvent) {
+        window?.makeKey()
+        window?.makeFirstResponder(self)
+        drag.begin(at: convert(event.locationInWindow, from: nil)); needsDisplay = true
+    }
     override func mouseDragged(with event: NSEvent) {
-        guard let start else { return }
-        let point = clamped(convert(event.locationInWindow, from: nil))
-        current = CGRect(x: min(start.x, point.x), y: min(start.y, point.y),
-                         width: abs(point.x-start.x), height: abs(point.y-start.y))
+        drag.update(to: convert(event.locationInWindow, from: nil))
         needsDisplay = true
     }
     override func mouseUp(with event: NSEvent) {
-        mouseDragged(with: event); start = nil
-        guard current.width >= 2, current.height >= 2 else { return }
+        mouseDragged(with: event)
+        drag.end()
+        guard drag.current.width >= 2, drag.current.height >= 2 else { return }
         report(CaptureSelection(displayID: displayID, screenFrame: screenFrame,
-                                rect: current.offsetBy(dx: screenFrame.minX, dy: screenFrame.minY)))
+                                rect: drag.current.offsetBy(dx: screenFrame.minX, dy: screenFrame.minY)))
     }
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { report(nil) }
-        else if event.keyCode == 36, current.width >= 2, current.height >= 2 {
+        else if event.keyCode == 49 {
+            drag.setMoving(true, at: currentMousePoint?() ?? windowMousePoint()); needsDisplay = true
+        } else if event.keyCode == 36, drag.current.width >= 2, drag.current.height >= 2 {
             report(CaptureSelection(displayID: displayID, screenFrame: screenFrame,
-                                    rect: current.offsetBy(dx: screenFrame.minX, dy: screenFrame.minY)))
+                                    rect: drag.current.offsetBy(dx: screenFrame.minX, dy: screenFrame.minY)))
         } else { super.keyDown(with: event) }
     }
-    private func clamped(_ p: CGPoint) -> CGPoint { CGPoint(x: min(max(0,p.x), bounds.width), y: min(max(0,p.y), bounds.height)) }
+    override func keyUp(with event: NSEvent) {
+        if event.keyCode == 49 {
+            drag.setMoving(false, at: currentMousePoint?() ?? windowMousePoint()); needsDisplay = true
+        } else { super.keyUp(with: event) }
+    }
+    private func windowMousePoint() -> CGPoint {
+        convert(window?.mouseLocationOutsideOfEventStream ?? .zero, from: nil)
+    }
 }

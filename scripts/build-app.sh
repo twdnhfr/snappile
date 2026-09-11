@@ -2,31 +2,141 @@
 set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
-CONFIGURATION="${1:-release}"
-if [[ "$CONFIGURATION" != "release" && "$CONFIGURATION" != "debug" ]]; then
-  echo "Aufruf: scripts/build-app.sh [release|debug]" >&2
+MODE="${1:-release}"
+if [[ "$MODE" != "release" && "$MODE" != "debug" && "$MODE" != "production" ]]; then
+  echo "Aufruf: scripts/build-app.sh [release|debug|production]" >&2
   exit 1
 fi
-swift build -c "$CONFIGURATION"
-BIN_DIR="$(swift build -c "$CONFIGURATION" --show-bin-path)"
+CONFIGURATION="$MODE"
+if [[ "$MODE" == "production" ]]; then
+  CONFIGURATION="release"
+  if [[ -z "${NOTARY_PROFILE:-}" ]]; then
+    echo "Production benötigt NOTARY_PROFILE mit einem vorhandenen notarytool-Schlüsselbundprofil." >&2
+    exit 1
+  fi
+fi
+
+if [[ ${SNAPPILE_SIGNING_IDENTITY+x} == x ]]; then
+  SIGNING_IDENTITY="$SNAPPILE_SIGNING_IDENTITY"
+  if [[ -z "$SIGNING_IDENTITY" ]]; then
+    echo "SNAPPILE_SIGNING_IDENTITY ist gesetzt, aber leer. Setze eine Identität oder '-' für ad hoc." >&2
+    exit 1
+  fi
+else
+  IDENTITY_OUTPUT="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+  IDENTITIES=()
+  IDENTITY_LABELS=()
+  while IFS= read -r line; do
+    if [[ "$line" == *'"Developer ID Application:'* ]]; then
+      candidate="${line#*) }"
+      candidate_hash="${candidate%% *}"
+      candidate_label="${candidate#*\"}"
+      candidate_label="${candidate_label%%\"*}"
+      if [[ "$candidate_hash" =~ ^[[:xdigit:]]{40}$ ]]; then
+        IDENTITIES+=("$candidate_hash")
+        IDENTITY_LABELS+=("$candidate_label")
+      fi
+    fi
+  done <<< "$IDENTITY_OUTPUT"
+
+  if [[ ${#IDENTITIES[@]} -eq 1 ]]; then
+    SIGNING_IDENTITY="${IDENTITIES[0]}"
+    echo "Verwende automatisch gefundene Codesigning-Identität: ${IDENTITY_LABELS[0]}"
+  elif [[ ${#IDENTITIES[@]} -gt 1 ]]; then
+    echo "Mehrere gültige Developer-ID-Application-Identitäten gefunden. Setze SNAPPILE_SIGNING_IDENTITY explizit:" >&2
+    printf '  %s\n' "${IDENTITY_LABELS[@]}" >&2
+    exit 1
+  else
+    SIGNING_IDENTITY="-"
+    echo "Warnung: Keine gültige Developer-ID-Application-Identität gefunden; der Build wird ad hoc signiert. macOS-Freigaben können dadurch bei jedem Build ungültig werden." >&2
+  fi
+fi
+
+if [[ "$MODE" == "production" && "$SIGNING_IDENTITY" == "-" ]]; then
+  echo "Production benötigt eine Developer-ID-Application-Signatur; ad hoc ist nicht erlaubt." >&2
+  exit 1
+fi
+BUILD_ARGUMENTS=(-c "$CONFIGURATION")
+if [[ "$MODE" == "production" ]]; then
+  BUILD_ARGUMENTS+=(--arch arm64 --arch x86_64)
+fi
+swift build "${BUILD_ARGUMENTS[@]}"
+BIN_DIR="$(swift build "${BUILD_ARGUMENTS[@]}" --show-bin-path)"
 # Sign outside synced Documents folders: File Provider may otherwise attach
 # FinderInfo between xattr cleanup and codesign, invalidating the app bundle.
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/snappile-build.XXXXXX")"
 trap 'rm -rf "$STAGING_DIR"' EXIT
 APP_DIR="$STAGING_DIR/SnapPile.app"
-OUTPUT_APP="$PROJECT_DIR/outputs/SnapPile.app"
-mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$PROJECT_DIR/work" "$PROJECT_DIR/outputs"
+OUTPUT_DIR="$PROJECT_DIR/outputs"
+if [[ "$MODE" == "production" ]]; then
+  OUTPUT_DIR="$OUTPUT_DIR/production"
+fi
+OUTPUT_APP="$OUTPUT_DIR/SnapPile.app"
+mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$PROJECT_DIR/work" "$OUTPUT_DIR"
 cp "$BIN_DIR/SnapPile" "$APP_DIR/Contents/MacOS/SnapPile"
 cp Support/Info.plist "$APP_DIR/Contents/Info.plist"
 swift scripts/make-icon.swift "$PROJECT_DIR/work/AppIcon.iconset"
 iconutil -c icns "$PROJECT_DIR/work/AppIcon.iconset" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
 xattr -cr "$APP_DIR"
-SIGNING_IDENTITY="${SNAPPILE_SIGNING_IDENTITY:--}"
-codesign --force --sign "$SIGNING_IDENTITY" --identifier de.wdnhfr.snappile "$APP_DIR"
+SIGN_ARGUMENTS=(--force --sign "$SIGNING_IDENTITY" --identifier de.wdnhfr.snappile)
+if [[ "$MODE" == "production" ]]; then
+  SIGN_ARGUMENTS+=(--options runtime --timestamp)
+fi
+codesign "${SIGN_ARGUMENTS[@]}" "$APP_DIR"
 codesign --verify --strict "$APP_DIR"
+
+notarize() {
+  local artifact="$1" report="$2" status
+  xcrun notarytool submit "$artifact" --keychain-profile "$NOTARY_PROFILE" --wait --output-format json > "$report"
+  status="$(plutil -extract status raw -o - "$report")"
+  if [[ "$status" != "Accepted" ]]; then
+    cat "$report" >&2
+    echo "Apple hat die Notarisierung nicht akzeptiert." >&2
+    exit 1
+  fi
+}
+
+if [[ "$MODE" == "production" ]]; then
+  SIGN_DETAILS="$(codesign --display --verbose=4 "$APP_DIR" 2>&1)"
+  if [[ "$SIGN_DETAILS" != *"Authority=Developer ID Application:"* ]]; then
+    echo "Production benötigt eine Developer-ID-Application-Signatur." >&2
+    exit 1
+  fi
+  lipo "$APP_DIR/Contents/MacOS/SnapPile" -verify_arch arm64 x86_64
+  ditto -c -k --norsrc --noextattr --keepParent "$APP_DIR" "$STAGING_DIR/notarize.zip"
+  echo "Notarisiere App bei Apple …"
+  notarize "$STAGING_DIR/notarize.zip" "$OUTPUT_DIR/notarization-app.json"
+  xcrun stapler staple "$APP_DIR"
+  xcrun stapler validate "$APP_DIR"
+  spctl --assess --type execute --verbose=2 "$APP_DIR"
+fi
+
 # This destination is generated by this script and contains no user data.
 rm -rf "$OUTPUT_APP"
 ditto --norsrc --noextattr "$APP_DIR" "$OUTPUT_APP"
-ditto -c -k --norsrc --noextattr --keepParent "$APP_DIR" "$PROJECT_DIR/outputs/SnapPile-macOS.zip"
+ditto -c -k --norsrc --noextattr --keepParent "$APP_DIR" "$OUTPUT_DIR/SnapPile-macOS.zip"
+if [[ "$MODE" == "production" ]]; then
+  # Verify the exact download after extraction, including the stapled ticket.
+  ditto -x -k "$OUTPUT_DIR/SnapPile-macOS.zip" "$STAGING_DIR/zip-check"
+  for verify_app in "$OUTPUT_APP" "$STAGING_DIR/zip-check/SnapPile.app"; do
+    codesign --verify --deep --strict "$verify_app"
+    xcrun stapler validate "$verify_app"
+    spctl --assess --type execute --verbose=2 "$verify_app"
+  done
+  VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' Support/Info.plist)"
+  DMG_PATH="$OUTPUT_DIR/SnapPile-$VERSION.dmg"
+  mkdir -p "$STAGING_DIR/dmg"
+  ditto --norsrc --noextattr "$APP_DIR" "$STAGING_DIR/dmg/SnapPile.app"
+  ln -s /Applications "$STAGING_DIR/dmg/Applications"
+  hdiutil create -volname "SnapPile $VERSION" -srcfolder "$STAGING_DIR/dmg" -ov -format UDZO "$DMG_PATH"
+  codesign --force --timestamp --sign "$SIGNING_IDENTITY" "$DMG_PATH"
+  echo "Notarisiere DMG bei Apple …"
+  notarize "$DMG_PATH" "$OUTPUT_DIR/notarization-dmg.json"
+  xcrun stapler staple "$DMG_PATH"
+  xcrun stapler validate "$DMG_PATH"
+  codesign --verify --strict "$DMG_PATH"
+  spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG_PATH"
+  echo "Notarisiertes Universal-DMG: $DMG_PATH"
+fi
 echo "App erstellt: $OUTPUT_APP"
-echo "Geprüftes App-Archiv: $PROJECT_DIR/outputs/SnapPile-macOS.zip"
+echo "Geprüftes App-Archiv: $OUTPUT_DIR/SnapPile-macOS.zip"
