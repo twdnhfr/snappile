@@ -59,10 +59,7 @@ final class MenuPopoverLayoutTests: XCTestCase {
             if firstAccentRow != nil { break }
         }
         XCTAssertLessThan(try XCTUnwrap(firstAccentRow),100, "Menükopf ist nach unten verschoben")
-        let root=URL(fileURLWithPath:#filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let work=root.appendingPathComponent("work",isDirectory:true)
-        try FileManager.default.createDirectory(at:work,withIntermediateDirectories:true)
-        try XCTUnwrap(bitmap.representation(using:.png,properties:[:])).write(to:work.appendingPathComponent("popover-empty.png"))
+        try XCTUnwrap(bitmap.representation(using:.png,properties:[:])).write(to:TestOutput.directory().appendingPathComponent("popover-empty.png"))
     }
 
     private struct Measurement {

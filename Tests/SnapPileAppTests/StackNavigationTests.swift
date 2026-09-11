@@ -141,19 +141,6 @@ final class StackNavigationTests: XCTestCase {
         XCTAssertTrue(model.store.item(id: pinned)?.isPinned == true)
     }
 
-    func testBrowsingDifferentAspectRatiosKeepsPanelHeightStable() throws {
-        let model = AppController()
-        let wide = try addItem(to: model.store, width: 16, height: 10, time: 1)
-        let portrait = try addItem(to: model.store, width: 10, height: 16, time: 2)
-        let items = model.store.items
-        let wideItem = try XCTUnwrap(model.store.item(id: wide))
-        let portraitItem = try XCTUnwrap(model.store.item(id: portrait))
-
-        let wideHeight = StackLayout.height(items: items, expanded: false, frontItem: wideItem)
-        let portraitHeight = StackLayout.height(items: items, expanded: false, frontItem: portraitItem)
-        XCTAssertEqual(wideHeight, portraitHeight)
-    }
-
     @discardableResult
     private func addItem(to store: ScreenshotStore, width: Int, height: Int, time: TimeInterval) throws -> UUID {
         try store.add(pngData: syntheticPNG(width: width, height: height), pixelWidth: width,

@@ -8,45 +8,32 @@ import UniformTypeIdentifiers
 
 @MainActor
 final class StackCardLayoutTests: XCTestCase {
-    func testAllImageFormatsUse175PointSquareCards() {
-        let cases = [(1920, 1080), (1024, 1024), (2560, 720)]
-
-        for (width, height) in cases {
-            let size = StackLayout.cardSize(pixelWidth: width, pixelHeight: height)
-            XCTAssertEqual(size, CGSize(width: 175, height: 175))
-        }
+    func testCardIsAlwaysASquareAndClampsToTheAvailableHeight() {
+        XCTAssertEqual(StackLayout.cardSize(), CGSize(width: 175, height: 175))
+        XCTAssertEqual(StackLayout.cardSize(maxHeight: 80), CGSize(width: 80, height: 80))
+        XCTAssertEqual(StackLayout.cardSize(maxHeight: 0), CGSize(width: 1, height: 1))
     }
 
-    func testTallImagesDoNotEnlargeTheCard() {
-        let size = StackLayout.cardSize(pixelWidth: 1080, pixelHeight: 1920)
-
-        XCTAssertEqual(size, CGSize(width: 175, height: 175))
-    }
-
-    func testInvalidDimensionsStillProduceAUsableFiniteCard() {
-        let size = StackLayout.cardSize(pixelWidth: 0, pixelHeight: 0)
-
-        XCTAssertTrue(size.width.isFinite)
-        XCTAssertTrue(size.height.isFinite)
-        XCTAssertGreaterThan(size.width, 0)
-        XCTAssertGreaterThan(size.height, 0)
+    func testPanelHeightDependsOnlyOnItemCount() {
+        XCTAssertEqual(StackLayout.height(itemCount: 1, expanded: false), 66 + 175)
+        XCTAssertEqual(StackLayout.height(itemCount: 3, expanded: false), 66 + 175 + 12)
+        XCTAssertEqual(StackLayout.height(itemCount: 5, expanded: false), 66 + 175 + 12)
+        XCTAssertEqual(StackLayout.height(itemCount: 2, expanded: true), 66 + 175 * 2 + 8 + 2)
+        XCTAssertEqual(StackLayout.height(itemCount: 10, expanded: true), 540)
     }
 
     func testRenderSyntheticCardsForVisualInspection() throws {
         _ = NSApplication.shared
         let model = AppController()
         defer { model.store.removeAll(includingPinned: true) }
-        let outputDirectory = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("work", isDirectory: true)
-        try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+        let outputDirectory = try TestOutput.directory()
 
         for (name, dimensions) in [("panorama", (1920, 1080)), ("square", (1000, 1000)), ("portrait", (900, 1900))] {
             let (width, height) = dimensions
             let image = try syntheticImage(width: width, height: height)
             let item = ScreenshotItem(pngData: Data(), thumbnail: image,
                                       pixelWidth: width, pixelHeight: height, createdAt: Date())
-            let size = StackLayout.cardSize(for: item)
+            let size = StackLayout.cardSize()
             let hostingView = NSHostingView(rootView: ScreenshotCard(model: model, item: item)
                 .environment(\.colorScheme, .light))
             hostingView.frame = NSRect(origin: .zero, size: size)
@@ -72,9 +59,7 @@ final class StackCardLayoutTests: XCTestCase {
         _ = NSApplication.shared
         let model = AppController()
         defer { model.store.removeAll(includingPinned: true) }
-        let outputDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("work", isDirectory: true)
-        try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+        let outputDirectory = try TestOutput.directory()
         let cases: [(String, Int, Int, CGFloat?)] = [
             ("small", 295, 236, nil), ("portrait", 180, 380, nil),
             ("square", 240, 240, nil), ("panorama", 480, 135, nil),
@@ -87,7 +72,7 @@ final class StackCardLayoutTests: XCTestCase {
             let frontID = try model.store.add(pngData: syntheticPNG(width: width, height: height), pixelWidth: width, pixelHeight: height,
                                              createdAt: Date(timeIntervalSince1970: 2))
             let hostSize = CGSize(width: StackLayout.width,
-                                  height: heightLimit ?? StackLayout.height(items: model.store.items, expanded: false))
+                                  height: heightLimit ?? StackLayout.height(itemCount: model.store.items.count, expanded: false))
             let host = NSHostingView(rootView: StackView(model: model).environment(\.colorScheme, .light))
             host.sizingOptions = []
             host.frame = NSRect(origin: .zero, size: hostSize)
@@ -117,7 +102,7 @@ final class StackCardLayoutTests: XCTestCase {
             try data.write(to: outputDirectory.appendingPathComponent("stack-adaptive-\(name).png"))
 
             model.store.remove(id: frontID)
-            host.setFrameSize(CGSize(width: StackLayout.width, height: StackLayout.height(items: model.store.items, expanded: false)))
+            host.setFrameSize(CGSize(width: StackLayout.width, height: StackLayout.height(itemCount: model.store.items.count, expanded: false)))
             RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.35))
             host.layoutSubtreeIfNeeded()
             let switchedThumbnail = try XCTUnwrap(findThumbnailViews(in: host).first)

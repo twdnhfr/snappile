@@ -81,16 +81,17 @@ public final class ScreenshotStore: ObservableObject {
               CGImageSourceGetType(source) == UTType.png.identifier as CFString,
               let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
-              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue,
-              width == pixelWidth, height == pixelHeight,
-              let thumbnailCG = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                  kCGImageSourceCreateThumbnailFromImageAlways: true,
-                  kCGImageSourceThumbnailMaxPixelSize: 520,
-                  kCGImageSourceCreateThumbnailWithTransform: true
-              ] as CFDictionary) else {
+              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue else {
             throw ScreenshotStoreError.invalidPNG
         }
-        guard pngData.count <= byteLimit else { throw ScreenshotStoreError.imageTooLarge }
+        guard width == pixelWidth, height == pixelHeight else { throw ScreenshotStoreError.invalidDimensions }
+        guard let thumbnailCG = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: 520,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ] as CFDictionary) else {
+            throw ScreenshotStoreError.invalidPNG
+        }
 
         let id = UUID()
         let date = createdAt ?? now()

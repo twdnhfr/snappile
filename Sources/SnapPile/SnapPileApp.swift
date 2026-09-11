@@ -9,8 +9,9 @@ enum SnapPileMain {
     @MainActor static func main() {
         let app = NSApplication.shared
         if let bundleID = Bundle.main.bundleIdentifier,
-           NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).contains(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
-            NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first?.activate(options: [])
+           let other = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+               .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
+            other.activate(options: [])
             return
         }
         app.setActivationPolicy(.accessory)
@@ -278,14 +279,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         if onboardingWindow == nil {
             let height = min(740, (NSScreen.main?.visibleFrame.height ?? 800) - 60)
             let window = NSWindow(contentRect:NSRect(x:0,y:0,width:560,height:height),styleMask:[.titled,.closable],backing:.buffered,defer:false)
-            window.title = "Willkommen bei SnapPile"; window.isReleasedWhenClosed = false
+            window.title = "Willkommen bei SnapPile"; window.isReleasedWhenClosed = false; window.delegate = self
             window.contentView = NSHostingView(rootView:OnboardingView(model:self))
             window.center(); onboardingWindow = window
         }
         settingsWindow?.orderOut(nil)
         NSApp.activate(ignoringOtherApps:true); onboardingWindow?.makeKeyAndOrderFront(nil)
     }
-    func dismissOnboarding() { onboardingWindow?.orderOut(nil) }
+    func dismissOnboarding() {
+        // "Später" counts as completed; a missing screen permission still reopens the onboarding on launch.
+        settings.hasCompletedOnboarding = true
+        onboardingWindow?.orderOut(nil)
+    }
     func finishOnboardingAndCapture() {
         refreshPermissions()
         guard screenPermission else { notify("Die Bildschirmfreigabe fehlt noch.",error:true); return }
@@ -315,7 +320,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         NSApp.activate(ignoringOtherApps:true); window.makeKeyAndOrderFront(nil)
     }
     func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow, window === previewWindow else { return }
+        guard let window = notification.object as? NSWindow else { return }
+        if window === onboardingWindow { settings.hasCompletedOnboarding = true; return }
+        guard window === previewWindow else { return }
         window.contentView = nil
         previewWindow = nil; previewID = nil
     }

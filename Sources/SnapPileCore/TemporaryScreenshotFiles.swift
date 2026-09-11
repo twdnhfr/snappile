@@ -48,8 +48,9 @@ public final class TemporaryScreenshotFiles {
                 byteLimit: Int = 256 * 1024 * 1024, fileLimit: Int = 50,
                 now: @escaping () -> Date = Date.init) {
         precondition(retention > 0 && byteLimit >= 0 && fileLimit > 0)
+        let identifier = Bundle.main.bundleIdentifier ?? "de.wdnhfr.snappile"
         let base = baseDirectory ?? FileManager.default.temporaryDirectory
-            .appendingPathComponent("de.wdnhfr.snappile-drag", isDirectory: true)
+            .appendingPathComponent("\(identifier)-drag", isDirectory: true)
         self.baseDirectory = base
         sessionDirectory = base.appendingPathComponent("\(getpid())-\(UUID().uuidString)", isDirectory: true)
         self.retention = retention

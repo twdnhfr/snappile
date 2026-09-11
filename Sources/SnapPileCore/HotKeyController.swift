@@ -4,10 +4,11 @@ import Carbon
 @MainActor
 public final class HotKeyController {
     private let onTrigger: () -> Void
-    private var hotKey: EventHotKeyRef?
-    private var eventHandler: EventHandlerRef?
-    private var tap: CFMachPort?
-    private var tapSource: CFRunLoopSource?
+    // Only mutated on the main actor; unsafe so that deinit can release the handles.
+    nonisolated(unsafe) private var hotKey: EventHotKeyRef?
+    nonisolated(unsafe) private var eventHandler: EventHandlerRef?
+    nonisolated(unsafe) private var tap: CFMachPort?
+    nonisolated(unsafe) private var tapSource: CFRunLoopSource?
     private var chord = OptionChordState()
     private var nextID: UInt32 = 1
     private var registeredKeyCode: UInt32?
@@ -21,6 +22,15 @@ public final class HotKeyController {
     }
 
     public init(onTrigger: @escaping () -> Void) { self.onTrigger = onTrigger; installCarbonHandler() }
+
+    deinit {
+        // Both callbacks hold an unretained pointer to this instance; tear them
+        // down even when a client never called stop().
+        if let hotKey { UnregisterEventHotKey(hotKey) }
+        if let eventHandler { RemoveEventHandler(eventHandler) }
+        if let tapSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), tapSource, .commonModes) }
+        if let tap { CFMachPortInvalidate(tap) }
+    }
     public func register(keyCode: UInt32, modifiers: UInt32) throws {
         guard eventHandler != nil else { throw HotKeyError.registrationFailed(OSStatus(eventNotHandledErr)) }
         if registeredKeyCode == keyCode, registeredModifiers == modifiers, hotKey != nil { return }
@@ -89,7 +99,14 @@ public final class HotKeyController {
     }
 }
 
-public enum HotKeyError: LocalizedError, Equatable { case registrationFailed(OSStatus); public var errorDescription: String? { "Tastenkürzel konnte nicht registriert werden (Status \(String(describing: self)))." } }
+public enum HotKeyError: LocalizedError, Equatable {
+    case registrationFailed(OSStatus)
+    public var errorDescription: String? {
+        switch self {
+        case .registrationFailed(let status): return "Tastenkürzel konnte nicht registriert werden (OSStatus \(status))."
+        }
+    }
+}
 
 /// Tracks the physical rising edge; releasing another modifier never arms a held chord.
 public struct OptionChordState {

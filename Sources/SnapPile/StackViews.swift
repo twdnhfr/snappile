@@ -9,35 +9,24 @@ enum StackLayout {
     static let width: CGFloat = contentWidth + 36
     static let maxCardHeight: CGFloat = 175
     static let layerOffset: CGFloat = 6
+    static let cardSpacing: CGFloat = 8
+    /// Header row plus the paddings around the card area.
+    static let chromeHeight: CGFloat = 66
+    static let maxExpandedHeight: CGFloat = 540
     static func depth(itemCount: Int) -> CGFloat { CGFloat(min(max(itemCount - 1, 0), 2)) * layerOffset }
 
-    static func cardSize(pixelWidth: Int, pixelHeight: Int,
-                         availableWidth: CGFloat = contentWidth,
-                         maxHeight: CGFloat = maxCardHeight) -> CGSize {
-        let side = max(1, min(contentWidth, availableWidth, maxHeight))
+    /// Cards are always square, so browsing between formats keeps the panel height stable.
+    static func cardSize(maxHeight: CGFloat = maxCardHeight) -> CGSize {
+        let side = max(1, min(contentWidth, maxHeight))
         return CGSize(width: side, height: side)
     }
 
-    static func cardSize(for item: ScreenshotItem, maxHeight: CGFloat = maxCardHeight) -> CGSize {
-        cardSize(pixelWidth: item.pixelWidth, pixelHeight: item.pixelHeight, maxHeight: maxHeight)
-    }
-
-    static func collapsedHeight(itemCount: Int, frontItem: ScreenshotItem) -> CGFloat {
-        66 + cardSize(for: frontItem).height + depth(itemCount: itemCount)
-    }
-
-    static func height(items: [ScreenshotItem], expanded: Bool, frontItem: ScreenshotItem? = nil) -> CGFloat {
-        guard expanded else {
-            guard let frontItem = frontItem ?? items.first else { return height(itemCount: 0, expanded: false) }
-            return collapsedHeight(itemCount: items.count, frontItem: frontItem)
-        }
-        let cardsHeight = items.reduce(CGFloat.zero) { $0 + cardSize(for: $1).height }
-        let spacing = CGFloat(max(items.count - 1, 0)) * 8
-        return min(540, 66 + max(cardsHeight + spacing + 2, 182))
-    }
-
     static func height(itemCount: Int, expanded: Bool) -> CGFloat {
-        expanded ? min(540, 66 + CGFloat(max(itemCount, 1)) * (174 + 8)) : 66 + 174 + depth(itemCount: itemCount)
+        let cardHeight = cardSize().height
+        guard expanded else { return chromeHeight + cardHeight + depth(itemCount: itemCount) }
+        let cardsHeight = CGFloat(itemCount) * cardHeight
+        let spacing = CGFloat(max(itemCount - 1, 0)) * cardSpacing
+        return min(maxExpandedHeight, chromeHeight + max(cardsHeight + spacing + 2, 182))
     }
 }
 
@@ -55,7 +44,7 @@ struct StackView: View {
     }
 
     private func availableMaxCardHeight(_ viewportHeight: CGFloat) -> CGFloat {
-        let reserved = model.isExpanded ? 66 : 66 + StackLayout.depth(itemCount: store.items.count)
+        let reserved = StackLayout.chromeHeight + (model.isExpanded ? 0 : StackLayout.depth(itemCount: store.items.count))
         return max(80, min(StackLayout.maxCardHeight, viewportHeight - reserved))
     }
 
@@ -82,7 +71,7 @@ struct StackView: View {
                     }.padding(.bottom, 2)
                 }.scrollIndicators(.hidden)
             } else if let item = model.selectedStackItem {
-                let cardSize = StackLayout.cardSize(for: item, maxHeight: maxCardHeight)
+                let cardSize = StackLayout.cardSize(maxHeight: maxCardHeight)
                 ZStack(alignment: .top) {
                     ForEach(Array(store.items.prefix(3).enumerated().reversed()), id: \.element.id) { index, _ in
                         if index > 0 {
@@ -128,7 +117,7 @@ struct ScreenshotCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let cardSize = StackLayout.cardSize(for: item, maxHeight: maxCardHeight)
+        let cardSize = StackLayout.cardSize(maxHeight: maxCardHeight)
         DraggableThumbnail(item: item, onClick: { model.preview(item.id) }, onDragError: { model.notify($0, error: true) }, contentMode: .fill)
             .frame(width: cardSize.width, height: cardSize.height)
             .background(.primary.opacity(0.045))

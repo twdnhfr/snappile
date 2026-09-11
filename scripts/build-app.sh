@@ -2,6 +2,7 @@
 set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
+BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' Support/Info.plist)"
 MODE="${1:-release}"
 if [[ "$MODE" != "release" && "$MODE" != "debug" && "$MODE" != "production" ]]; then
   echo "Aufruf: scripts/build-app.sh [release|debug|production]" >&2
@@ -78,7 +79,7 @@ cp Support/Info.plist "$APP_DIR/Contents/Info.plist"
 swift scripts/make-icon.swift "$PROJECT_DIR/work/AppIcon.iconset"
 iconutil -c icns "$PROJECT_DIR/work/AppIcon.iconset" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
 xattr -cr "$APP_DIR"
-SIGN_ARGUMENTS=(--force --sign "$SIGNING_IDENTITY" --identifier de.wdnhfr.snappile)
+SIGN_ARGUMENTS=(--force --sign "$SIGNING_IDENTITY" --identifier "$BUNDLE_ID")
 if [[ "$MODE" == "production" ]]; then
   SIGN_ARGUMENTS+=(--options runtime --timestamp)
 fi

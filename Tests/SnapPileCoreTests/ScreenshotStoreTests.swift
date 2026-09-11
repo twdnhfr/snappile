@@ -147,7 +147,7 @@ final class ScreenshotStoreTests: XCTestCase {
             XCTAssertEqual(error as? ScreenshotStoreError, .invalidPNG)
         }
         XCTAssertThrowsError(try store.add(pngData: png(), pixelWidth: 11, pixelHeight: 10)) { error in
-        XCTAssertEqual(error as? ScreenshotStoreError, .invalidPNG)
+            XCTAssertEqual(error as? ScreenshotStoreError, .invalidDimensions)
         }
         XCTAssertThrowsError(try store.add(pngData: png(), pixelWidth: 0, pixelHeight: 10)) { error in
             XCTAssertEqual(error as? ScreenshotStoreError, .invalidDimensions)

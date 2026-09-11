@@ -63,7 +63,7 @@ final class StackPanelController {
         guard let screen else { return }
         let visible = screen.visibleFrame
         let width = StackLayout.width
-        let contentHeight = StackLayout.height(items: model.store.items, expanded: model.isExpanded, frontItem: model.selectedStackItem)
+        let contentHeight = StackLayout.height(itemCount: model.store.items.count, expanded: model.isExpanded)
         let height = min(contentHeight, visible.height - 24)
         let x = model.settings.side == .right ? visible.maxX-width-2 : visible.minX+2
         let y = max(visible.minY+12, visible.midY-height/2)
