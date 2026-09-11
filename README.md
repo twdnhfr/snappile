@@ -2,13 +2,13 @@
 
 Ein temporärer visueller Zwischenspeicher für KI-Workflows. Nativ für macOS: Bereich aufnehmen, kurz im schwebenden Stapel sammeln und direkt weitergeben.
 
-## Starten
+## Installieren und starten
 
-Die lokal gebaute App liegt in `outputs/SnapPile.app`. Öffne sie per Doppelklick. SnapPile sitzt in der Menüleiste und hat kein Dock-Symbol. Beim ersten Start führt ein eigener Onboarding-Bildschirm durch die macOS-Freigaben. Die erste Aufnahme ist erst nach bestätigtem Bildschirmzugriff möglich. Die Einrichtung ist später über das Menü erneut erreichbar.
+Lade das notarisierte DMG der aktuellen Version von der [Releases-Seite](https://github.com/twdnhfr/snappile/releases) und ziehe SnapPile nach Programme. Alternativ baust du die App selbst, siehe [Entwickeln](#entwickeln). SnapPile sitzt in der Menüleiste und hat kein Dock-Symbol. Beim ersten Start führt ein eigener Onboarding-Bildschirm durch die macOS-Freigaben. Die erste Aufnahme ist erst nach bestätigtem Bildschirmzugriff möglich. Die Einrichtung ist später über das Menü erneut erreichbar.
 
 1. Über **Bildschirm freigeben …** im Onboarding oder **Bildschirmaufnahme → Erlauben …** in den Einstellungen die macOS-Freigabe für SnapPile aktivieren. Falls macOS einen Neustart der App verlangt, SnapPile beenden und erneut öffnen.
 2. Optional **Eingabeüberwachung → Erlauben …** aktivieren, damit linke und rechte Option-Taste zusammen die Aufnahme auslösen können. Das Ersatz-Kürzel benötigt diese Freigabe nicht. Der Option-Hotkey wertet die links-/rechtsspezifischen Modifier-Flags des jeweiligen Ereignisses aus.
-3. **⌃⌥S** drücken oder im Menü **Bereich aufnehmen** wählen. Einen Bereich ziehen; währenddessen **Leertaste halten**, um die ganze Box zu verschieben. Nach Loslassen der Leertaste wieder die Größe anpassen. **Esc** bricht ab.
+3. **⌃⌥S** drücken oder im Menü **Bereich aufnehmen** wählen. Einen Bereich ziehen; währenddessen **Leertaste halten**, um die ganze Box zu verschieben. Nach Loslassen der Leertaste wieder die Größe anpassen. **Return** übernimmt die aktuelle Auswahl, **Esc** bricht ab.
 4. Das Bild erscheint am Bildschirmrand. Auf die Karte klicken öffnet die Vorschau; Ziehen übergibt das Original an ein kompatibles Ziel.
 
 ## MVP-Funktionen
@@ -27,7 +27,7 @@ Die lokal gebaute App liegt in `outputs/SnapPile.app`. Öffne sie per Doppelklic
 
 Aufnahmen liegen zunächst ausschließlich als komprimierte PNG-Daten im Speicher; Vorschaubilder sind auf 520 Pixel Kantenlänge begrenzt. Es gibt keine Datenbank und keine Cloud. Einstellungen werden dauerhaft in den macOS-Benutzereinstellungen gespeichert.
 
-Erst beim Ziehen erstellt SnapPile eine PNG im benutzereigenen Temp-Verzeichnis `de.wdnhfr.snappile-drag`. Die Verzeichnisse sind nur für den aktuellen Benutzer zugänglich. Wiederholtes Ziehen derselben Aufnahme verwendet dieselbe Datei. Nach Ende eines Drags bleibt sie noch 30 Minuten verfügbar, damit Empfänger sie verzögert einlesen können; die Bereinigung läuft alle fünf Sekunden. Aktive Drags sind davon ausgenommen. Beim Beenden werden alle eigenen Exportdateien gelöscht. Nach einem Absturz räumt der nächste Start verwaiste Sitzungsverzeichnisse auf. Pins schützen die Aufnahme im Stapel, verlängern aber nicht die Lebensdauer einer Exportdatei.
+Erst beim Ziehen erstellt SnapPile eine PNG in einem Unterverzeichnis des benutzereigenen Temp-Verzeichnisses, benannt nach der Bundle-ID mit dem Suffix `-drag`. Die Verzeichnisse sind nur für den aktuellen Benutzer zugänglich. Wiederholtes Ziehen derselben Aufnahme verwendet dieselbe Datei. Nach Ende eines Drags bleibt sie noch 30 Minuten verfügbar, damit Empfänger sie verzögert einlesen können; die Bereinigung läuft alle fünf Sekunden. Aktive Drags sind davon ausgenommen. Beim Beenden werden alle eigenen Exportdateien gelöscht. Nach einem Absturz räumt der nächste Start verwaiste Sitzungsverzeichnisse auf. Pins schützen die Aufnahme im Stapel, verlängern aber nicht die Lebensdauer einer Exportdatei.
 
 Der temporäre Export ist auf 50 Dateien und 256 MiB begrenzt. Ist der Platz noch durch laufende oder kürzlich beendete Übergaben belegt, wird ein neuer Drag mit einer Meldung abgelehnt. Kopieren und explizites Speichern bleiben möglich. Eine Exportdatei wird nicht schon beim Loslassen oder beim Löschen ihrer Karte entfernt, weil das Ziel sie noch lesen kann.
 
@@ -37,13 +37,15 @@ Das 256-MiB-Limit bezieht sich auf PNG-Daten, nicht auf den gesamten Prozessspei
 
 ## Entwickeln
 
-Voraussetzung: macOS 14 oder neuer und eine passende Xcode-/Swift-Toolchain. Keine Drittanbieter-Abhängigkeiten.
+Voraussetzung: macOS 14 oder neuer und eine Toolchain ab Swift 5.10 (Xcode 15.3). Keine Drittanbieter-Abhängigkeiten.
 
 ```sh
 swift test
 bash scripts/build-app.sh
 open outputs/SnapPile.app
 ```
+
+Render-Tests legen Vergleichsbilder unter `$TMPDIR/SnapPileTests` ab, nicht im Repository.
 
 Der lokale Build erzeugt eine App für die Architektur des ausführenden Macs. Ohne gesetztes `SNAPPILE_SIGNING_IDENTITY` wird genau eine gültige Identität vom Typ `Developer ID Application:` automatisch verwendet. Gibt es mehrere passende Identitäten, bricht der Build mit einer Aufforderung zur expliziten Auswahl ab. Gibt es keine, wird mit einer Warnung ad hoc signiert. Mit `SNAPPILE_SIGNING_IDENTITY` lässt sich die Identität explizit setzen; `SNAPPILE_SIGNING_IDENTITY=-` erzwingt bewusst eine ad-hoc-Signatur. Dieser lokale Build ist nicht notarisiert. Das geprüfte Archiv liegt zusätzlich in `outputs/SnapPile-macOS.zip`.
 
@@ -74,13 +76,16 @@ Demo-Bilder sind ausdrücklich als Beispiel gekennzeichnet. Dieser Modus ist aus
 - `Sources/SnapPile`: AppKit-Lebenszyklus, SwiftUI-Oberflächen, Menüleiste und Panels.
 - `Sources/SnapPileCore`: Aufnahme, Auswahl, Hotkeys, Speicher, Einstellungen und Bildübergabe.
 - `Tests/SnapPileCoreTests`: synthetische Regressionstests ohne echte Bildschirmdaten.
+- `Tests/SnapPileAppTests`: Layout- und Navigationstests für Stapel und Menü, ebenfalls mit synthetischen Bildern.
 - `Support/Info.plist`: App-Bundle und Berechtigungstexte.
-- `scripts/build-app.sh`: lokaler App-Build sowie signierter und notarisierter Production-Build.
-
-Der Projektaufbau orientiert sich am schlanken SwiftPM-/AppKit-Muster von MenuTune und DevWatch. Deren vorhandene Projekte wurden nicht verändert.
+- `scripts/build-app.sh`: lokaler App-Build sowie signierter und notarisierter Production-Build; `scripts/make-icon.swift` zeichnet das App-Icon.
 
 ## Grenzen von Version 0.1
 
 Weitere vorgemerkte Funktionen stehen in [BACKLOG.md](BACKLOG.md).
 
 Keine Bildbearbeitung, Cloud, Anmeldung, Datenbank oder Mehrfachauswahl. Bildschirmübergreifende Auswahl und ein gemeinsamer Drag mehrerer Bilder sind noch nicht enthalten. Die Annahme von Drag-and-drop hängt vom Zielprogramm ab; Kopieren und PNG-Speichern bleiben weitere Übergabewege. Ein erfolgreicher Production-Build bestätigt Signatur und Notarisierung; er ersetzt keinen Funktionstest auf einem Intel-Mac oder in jedem Drag-Empfänger.
+
+## Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
