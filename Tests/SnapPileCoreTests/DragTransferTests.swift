@@ -1,15 +1,17 @@
 import AppKit
 import Darwin
 import XCTest
+
 @testable import SnapPileCore
 
 @MainActor
 final class DragTransferTests: XCTestCase {
     private func item(id: UUID = UUID(), createdAt: Date = Date(timeIntervalSince1970: 0)) -> ScreenshotItem {
-        let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 10, pixelsHigh: 10,
-                                      bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
-                                      isPlanar: false, colorSpaceName: .deviceRGB,
-                                      bytesPerRow: 40, bitsPerPixel: 32)!
+        let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: 10, pixelsHigh: 10,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+            isPlanar: false, colorSpaceName: .deviceRGB,
+            bytesPerRow: 40, bitsPerPixel: 32)!
         for offset in stride(from: 0, to: 400, by: 4) {
             bitmap.bitmapData![offset] = 220
             bitmap.bitmapData![offset + 1] = 50
@@ -17,12 +19,14 @@ final class DragTransferTests: XCTestCase {
             bitmap.bitmapData![offset + 3] = 255
         }
         let data = bitmap.representation(using: .png, properties: [:])!
-        return ScreenshotItem(id: id, pngData: data, thumbnail: NSImage(cgImage: bitmap.cgImage!, size: NSSize(width: 10, height: 10)),
-                              pixelWidth: 10, pixelHeight: 10, createdAt: createdAt)
+        return ScreenshotItem(
+            id: id, pngData: data, thumbnail: NSImage(cgImage: bitmap.cgImage!, size: NSSize(width: 10, height: 10)),
+            pixelWidth: 10, pixelHeight: 10, createdAt: createdAt)
     }
 
     private func directory() -> URL {
-        FileManager.default.temporaryDirectory.appendingPathComponent("SnapPileDragTests-\(UUID().uuidString)", isDirectory: true)
+        FileManager.default.temporaryDirectory.appendingPathComponent(
+            "SnapPileDragTests-\(UUID().uuidString)", isDirectory: true)
     }
 
     func testOneDragItemContainsExistingFileAndOriginalPNG() throws {
@@ -35,7 +39,8 @@ final class DragTransferTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file.url), source.pngData)
         let pasteboard = NSPasteboard.withUniqueName()
         defer { pasteboard.releaseGlobally() }
-        XCTAssertTrue(pasteboard.writeObjects([ScreenshotDragPasteboard.item(pngData: source.pngData, fileURL: file.url)]))
+        XCTAssertTrue(
+            pasteboard.writeObjects([ScreenshotDragPasteboard.item(pngData: source.pngData, fileURL: file.url)]))
         XCTAssertEqual(pasteboard.pasteboardItems?.count, 1)
         XCTAssertEqual(pasteboard.data(forType: .png), source.pngData)
         XCTAssertEqual(pasteboard.string(forType: .fileURL), file.url.absoluteString)
@@ -83,7 +88,7 @@ final class DragTransferTests: XCTestCase {
         let second = try cache.beginDrag(for: source)
         XCTAssertEqual(first.url, second.url)
         cache.finishDrag(first)
-        cache.finishDrag(first) // Duplicate completion must not release the second drag.
+        cache.finishDrag(first)  // Duplicate completion must not release the second drag.
         date.addTimeInterval(100)
         cache.removeExpired()
         XCTAssertTrue(FileManager.default.fileExists(atPath: second.url.path))
@@ -129,8 +134,9 @@ final class DragTransferTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: base) }
         var date = Date(timeIntervalSince1970: 1_000)
         let source = item()
-        let cache = TemporaryScreenshotFiles(baseDirectory: base, retention: 30, byteLimit: source.pngData.count,
-                                              now: { date })
+        let cache = TemporaryScreenshotFiles(
+            baseDirectory: base, retention: 30, byteLimit: source.pngData.count,
+            now: { date })
         let first = try cache.beginDrag(for: source)
         cache.finishDrag(first)
         XCTAssertThrowsError(try cache.beginDrag(for: item()))
@@ -150,7 +156,9 @@ final class DragTransferTests: XCTestCase {
         let stale = base.appendingPathComponent("\(deadPID)-\(UUID().uuidString)")
         let running = base.appendingPathComponent("\(getpid())-\(UUID().uuidString)")
         let unrelated = base.appendingPathComponent("keep")
-        for dir in [stale, running, unrelated] { try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: false) }
+        for dir in [stale, running, unrelated] {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: false)
+        }
         TemporaryScreenshotFiles(baseDirectory: base).removeExpired()
         XCTAssertFalse(FileManager.default.fileExists(atPath: stale.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: running.path))

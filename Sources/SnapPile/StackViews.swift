@@ -35,7 +35,11 @@ struct StackView: View {
     @ObservedObject var store: ScreenshotStore
     @ObservedObject var settings: AppSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    init(model: AppController) { self.model = model; store = model.store; settings = model.settings }
+    init(model: AppController) {
+        self.model = model
+        store = model.store
+        settings = model.settings
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -44,7 +48,8 @@ struct StackView: View {
     }
 
     private func availableMaxCardHeight(_ viewportHeight: CGFloat) -> CGFloat {
-        let reserved = StackLayout.chromeHeight + (model.isExpanded ? 0 : StackLayout.depth(itemCount: store.items.count))
+        let reserved =
+            StackLayout.chromeHeight + (model.isExpanded ? 0 : StackLayout.depth(itemCount: store.items.count))
         return max(80, min(StackLayout.maxCardHeight, viewportHeight - reserved))
     }
 
@@ -54,12 +59,19 @@ struct StackView: View {
             HStack(spacing: 4) {
                 Text("SnapPile").font(.system(size: 11, weight: .semibold))
                 Button(action: model.toggleExpanded) {
-                    Text(model.isExpanded || store.items.count < 2 ? "\(store.items.count)" : "\(model.stackPosition) / \(store.items.count)")
-                        .font(.system(size: 9, weight: .semibold, design: .rounded)).monospacedDigit()
-                        .padding(.horizontal, 4).padding(.vertical, 3)
-                        .background(.primary.opacity(0.07), in: Capsule())
-                }.buttonStyle(.plain).help("Bild \(model.stackPosition) von \(store.items.count) · Scrollen zum Blättern · Klicken für alle Bilder")
-                    .accessibilityLabel(model.isExpanded ? "\(store.items.count) Bilder" : "Bild \(model.stackPosition) von \(store.items.count)")
+                    Text(
+                        model.isExpanded || store.items.count < 2
+                            ? "\(store.items.count)" : "\(model.stackPosition) / \(store.items.count)"
+                    )
+                    .font(.system(size: 9, weight: .semibold, design: .rounded)).monospacedDigit()
+                    .padding(.horizontal, 4).padding(.vertical, 3)
+                    .background(.primary.opacity(0.07), in: Capsule())
+                }.buttonStyle(.plain).help(
+                    "Bild \(model.stackPosition) von \(store.items.count) · Scrollen zum Blättern · Klicken für alle Bilder"
+                )
+                .accessibilityLabel(
+                    model.isExpanded
+                        ? "\(store.items.count) Bilder" : "Bild \(model.stackPosition) von \(store.items.count)")
                 Spacer(minLength: 2)
                 SmallIconButton("Neue Aufnahme", symbol: "plus", action: model.beginCapture)
                 SmallIconButton("Stapel ausblenden", symbol: "minus", action: model.hideStack)
@@ -67,7 +79,9 @@ struct StackView: View {
             if model.isExpanded {
                 ScrollView {
                     LazyVStack(spacing: 8) {
-                        ForEach(store.items) { item in ScreenshotCard(model: model, item: item, maxCardHeight: maxCardHeight) }
+                        ForEach(store.items) { item in
+                            ScreenshotCard(model: model, item: item, maxCardHeight: maxCardHeight)
+                        }
                     }.padding(.bottom, 2)
                 }.scrollIndicators(.hidden)
             } else if let item = model.selectedStackItem {
@@ -85,9 +99,13 @@ struct StackView: View {
                     }
                     ScreenshotCard(model: model, item: item, maxCardHeight: maxCardHeight)
                         .id(item.id)
-                        .transition(.asymmetric(insertion: .offset(x: settings.side == .right ? 24 : -24).combined(with: .opacity), removal: .opacity))
-                }.frame(width: StackLayout.contentWidth,
-                        height: cardSize.height + StackLayout.depth(itemCount: store.items.count), alignment: .top)
+                        .transition(
+                            .asymmetric(
+                                insertion: .offset(x: settings.side == .right ? 24 : -24).combined(with: .opacity),
+                                removal: .opacity))
+                }.frame(
+                    width: StackLayout.contentWidth,
+                    height: cardSize.height + StackLayout.depth(itemCount: store.items.count), alignment: .top)
             }
         }
         .padding(8)
@@ -95,17 +113,20 @@ struct StackView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.primary.opacity(0.09)))
         .overlay(alignment: .bottom) {
             if let message = model.message {
-                Label(message, systemImage: model.messageIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-                    .font(.system(size: 10, weight: .medium)).lineLimit(3)
-                    .foregroundStyle(model.messageIsError ? Color.orange : Color.primary)
-                    .padding(.horizontal, 9).padding(.vertical, 7)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .padding(12).allowsHitTesting(false)
+                Label(
+                    message, systemImage: model.messageIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
+                )
+                .font(.system(size: 10, weight: .medium)).lineLimit(3)
+                .foregroundStyle(model.messageIsError ? Color.orange : Color.primary)
+                .padding(.horizontal, 9).padding(.vertical, 7)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(12).allowsHitTesting(false)
             }
         }
         .shadow(color: .black.opacity(0.16), radius: 8, x: 0, y: 3)
         .padding(10)
-        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85), value: model.selectedStackItem?.id)
+        .animation(
+            reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.85), value: model.selectedStackItem?.id)
     }
 }
 
@@ -118,37 +139,44 @@ struct ScreenshotCard: View {
 
     var body: some View {
         let cardSize = StackLayout.cardSize(maxHeight: maxCardHeight)
-        DraggableThumbnail(item: item, onClick: { model.preview(item.id) }, onDragError: { model.notify($0, error: true) }, contentMode: .fill)
-            .frame(width: cardSize.width, height: cardSize.height)
-            .background(.primary.opacity(0.045))
-            .help("\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes)) · Klicken für Vorschau")
-            .overlay(alignment: .topTrailing) {
-                overlayActions(compact: cardSize.width < 110).padding(3)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.primary.opacity(0.08)))
-                    .opacity(hovering ? 1 : 0.85).padding(6)
+        DraggableThumbnail(
+            item: item, onClick: { model.preview(item.id) }, onDragError: { model.notify($0, error: true) },
+            contentMode: .fill
+        )
+        .frame(width: cardSize.width, height: cardSize.height)
+        .background(.primary.opacity(0.045))
+        .help(
+            "\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes)) · Klicken für Vorschau"
+        )
+        .overlay(alignment: .topTrailing) {
+            overlayActions(compact: cardSize.width < 110).padding(3)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.primary.opacity(0.08)))
+                .opacity(hovering ? 1 : 0.85).padding(6)
+        }
+        .overlay(alignment: .bottomLeading) {
+            if hovering {
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    Text(
+                        "\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes, now: context.date))"
+                    )
+                    .font(.system(size: 9)).monospacedDigit()
+                    .padding(.horizontal, 7).padding(.vertical, 4)
+                    .background(.regularMaterial, in: Capsule())
+                }.padding(6).allowsHitTesting(false)
             }
-            .overlay(alignment: .bottomLeading) {
-                if hovering {
-                    TimelineView(.periodic(from: .now, by: 30)) { context in
-                        Text("\(item.pixelWidth) × \(item.pixelHeight) · \(lifetimeText(item, minutes: model.settings.expiryMinutes, now: context.date))")
-                            .font(.system(size: 9)).monospacedDigit()
-                            .padding(.horizontal, 7).padding(.vertical, 4)
-                            .background(.regularMaterial, in: Capsule())
-                    }.padding(6).allowsHitTesting(false)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.primary.opacity(0.10)))
-            .onHover { hovering = $0 }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
-            .contextMenu {
-                Button("Kopieren") { model.copy(item.id) }
-                Button("Speichern …") { model.save(item.id) }
-                Button(item.isPinned ? "Pin lösen" : "Anheften") { model.store.togglePin(id: item.id) }
-                Divider()
-                Button("Löschen", role: .destructive) { model.delete(item.id) }
-            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.primary.opacity(0.10)))
+        .onHover { hovering = $0 }
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
+        .contextMenu {
+            Button("Kopieren") { model.copy(item.id) }
+            Button("Speichern …") { model.save(item.id) }
+            Button(item.isPinned ? "Pin lösen" : "Anheften") { model.store.togglePin(id: item.id) }
+            Divider()
+            Button("Löschen", role: .destructive) { model.delete(item.id) }
+        }
     }
 
     @ViewBuilder
@@ -168,7 +196,10 @@ struct ScreenshotCard: View {
     private var actionButtons: some View {
         OverlayIconButton("Kopieren", symbol: "doc.on.doc") { model.copy(item.id) }
         OverlayIconButton("Speichern", symbol: "square.and.arrow.down") { model.save(item.id) }
-        OverlayIconButton(item.isPinned ? "Pin lösen" : "Anheften", symbol: item.isPinned ? "pin.fill" : "pin", selected: item.isPinned) { model.store.togglePin(id: item.id) }
+        OverlayIconButton(
+            item.isPinned ? "Pin lösen" : "Anheften", symbol: item.isPinned ? "pin.fill" : "pin",
+            selected: item.isPinned
+        ) { model.store.togglePin(id: item.id) }
         OverlayIconButton("Löschen", symbol: "trash") { model.delete(item.id) }
     }
 }
@@ -179,7 +210,10 @@ private struct OverlayIconButton: View {
     var selected = false
     let action: () -> Void
     init(_ title: String, symbol: String, selected: Bool = false, action: @escaping () -> Void) {
-        self.title = title; self.symbol = symbol; self.selected = selected; self.action = action
+        self.title = title
+        self.symbol = symbol
+        self.selected = selected
+        self.action = action
     }
     var body: some View {
         Button(action: action) {
@@ -195,16 +229,22 @@ struct SmallIconButton: View {
     let symbol: String
     var tint: Color = .secondary
     let action: () -> Void
-    init(_ title:String, symbol:String, tint:Color = .secondary, action:@escaping ()->Void) {
-        self.title=title; self.symbol=symbol; self.tint=tint; self.action=action
+    init(_ title: String, symbol: String, tint: Color = .secondary, action: @escaping () -> Void) {
+        self.title = title
+        self.symbol = symbol
+        self.tint = tint
+        self.action = action
     }
     var body: some View {
-        Button(action:action) { Image(systemName:symbol).font(.system(size:11,weight:.medium)).frame(width:23,height:23).contentShape(Rectangle()) }
-            .buttonStyle(.plain).foregroundStyle(tint).help(title).accessibilityLabel(title)
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .medium)).frame(width: 23, height: 23)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).foregroundStyle(tint).help(title).accessibilityLabel(title)
     }
 }
-func lifetimeText(_ item:ScreenshotItem,minutes:Int,now:Date=Date()) -> String {
+func lifetimeText(_ item: ScreenshotItem, minutes: Int, now: Date = Date()) -> String {
     if item.isPinned { return "Angeheftet" }
-    let remaining = max(0,Int(ceil((item.expirationDate(minutes:minutes)?.timeIntervalSince(now) ?? 0)/60)))
+    let remaining = max(0, Int(ceil((item.expirationDate(minutes: minutes)?.timeIntervalSince(now) ?? 0) / 60)))
     return remaining > 0 ? "noch \(remaining) Min." : "läuft ab"
 }

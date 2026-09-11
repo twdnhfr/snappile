@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import SnapPileCore
 
 final class CaptureGeometryTests: XCTestCase {
@@ -10,8 +11,9 @@ final class CaptureGeometryTests: XCTestCase {
             rect: CGRect(x: 100, y: 200, width: 300, height: 150)
         )
 
-        XCTAssertEqual(CaptureGeometry.topLeftRect(for: selection),
-                       CGRect(x: 100, y: 550, width: 300, height: 150))
+        XCTAssertEqual(
+            CaptureGeometry.topLeftRect(for: selection),
+            CGRect(x: 100, y: 550, width: 300, height: 150))
     }
 
     func testTopLeftRectOnSecondaryDisplayWithNegativeOrigin() {
@@ -21,8 +23,9 @@ final class CaptureGeometryTests: XCTestCase {
             rect: CGRect(x: -1800, y: 100, width: 400, height: 150)
         )
 
-        XCTAssertEqual(CaptureGeometry.topLeftRect(for: selection),
-                       CGRect(x: 120, y: 830, width: 400, height: 150))
+        XCTAssertEqual(
+            CaptureGeometry.topLeftRect(for: selection),
+            CGRect(x: 120, y: 830, width: 400, height: 150))
     }
 
     func testTopLeftRectOnDisplayAboveMainFlipsGlobalY() {
@@ -32,8 +35,9 @@ final class CaptureGeometryTests: XCTestCase {
             rect: CGRect(x: 80, y: 1000, width: 640, height: 360)
         )
 
-        XCTAssertEqual(CaptureGeometry.topLeftRect(for: selection),
-                       CGRect(x: 80, y: 980, width: 640, height: 360))
+        XCTAssertEqual(
+            CaptureGeometry.topLeftRect(for: selection),
+            CGRect(x: 80, y: 980, width: 640, height: 360))
     }
 
     func testOutputPixelSizeRoundsRetinaScale() {

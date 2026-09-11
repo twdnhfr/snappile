@@ -20,12 +20,14 @@ struct OnboardingView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text(isReady
-                         ? "Alles bereit. Du kannst deine erste Aufnahme machen."
-                         : "Für die erste Aufnahme braucht SnapPile eine kurze Freigabe.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        isReady
+                            ? "Alles bereit. Du kannst deine erste Aufnahme machen."
+                            : "Für die erste Aufnahme braucht SnapPile eine kurze Freigabe."
+                    )
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                     VStack(spacing: 10) {
                         PermissionCard(
@@ -35,21 +37,26 @@ struct OnboardingView: View {
                             symbol: "rectangle.dashed.badge.record",
                             tint: pileAccent,
                             granted: model.screenPermission,
-                            description: "Du bestimmst bei jeder Aufnahme den Ausschnitt. SnapPile legt ihn vorübergehend in deinem Stapel ab.",
+                            description:
+                                "Du bestimmst bei jeder Aufnahme den Ausschnitt. SnapPile legt ihn vorübergehend in deinem Stapel ab.",
                             buttonTitle: "Bildschirm freigeben …",
                             action: model.requestScreenPermission,
                             refresh: model.refreshPermissions,
-                            details: "Aktiviere SnapPile in den macOS-Datenschutzeinstellungen und kehre hierher zurück. Falls macOS einen Neustart verlangt, beende und öffne SnapPile erneut."
+                            details:
+                                "Aktiviere SnapPile in den macOS-Datenschutzeinstellungen und kehre hierher zurück. Falls macOS einen Neustart verlangt, beende und öffne SnapPile erneut."
                         )
 
                         optionCard
                     }
 
                     if let message = model.message {
-                        Label(message, systemImage: model.messageIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(model.messageIsError ? Color.orange : pileAccent)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Label(
+                            message,
+                            systemImage: model.messageIsError ? "exclamationmark.circle.fill" : "checkmark.circle.fill"
+                        )
+                        .font(.system(size: 11))
+                        .foregroundStyle(model.messageIsError ? Color.orange : pileAccent)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,10 +92,12 @@ struct OnboardingView: View {
                 }
             }
 
-            Text("Markiere einen Ausschnitt, behalte ihn kurz im Stapel und ziehe ihn direkt dorthin, wo du ihn brauchst.")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "Markiere einen Ausschnitt, behalte ihn kurz im Stapel und ziehe ihn direkt dorthin, wo du ihn brauchst."
+            )
+            .font(.system(size: 13))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 30)
@@ -128,10 +137,12 @@ struct OnboardingView: View {
                 .tint(pileAccent)
                 .font(.system(size: 11, weight: .medium))
 
-            Text("Die Eingabeüberwachung erkennt ausschließlich den linken und rechten Option-Modifikator. Es werden keine Texteingaben aufgezeichnet.")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "Die Eingabeüberwachung erkennt ausschließlich den linken und rechten Option-Modifikator. Es werden keine Texteingaben aufgezeichnet."
+            )
+            .font(.system(size: 10))
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 10) {
                 if model.inputPermission && settings.doubleOptionEnabled {
@@ -144,7 +155,7 @@ struct OnboardingView: View {
             }
 
             if let issue = model.optionMonitoringIssue {
-                Text(issue).font(.system(size:10)).foregroundStyle(.orange)
+                Text(issue).font(.system(size: 10)).foregroundStyle(.orange)
             }
             Text("Ohne diese Freigabe funktioniert das Ersatz-Kürzel \(settings.shortcutLabel) weiterhin.")
                 .font(.system(size: 10))
@@ -163,10 +174,12 @@ struct OnboardingView: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(pileAccent)
                     .padding(.top, 1)
-                Text("Aufnahmen werden automatisch verworfen. Beim Ziehen entsteht vorübergehend eine PNG-Datei. Kein Konto, keine Cloud.")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Aufnahmen werden automatisch verworfen. Beim Ziehen entsteht vorübergehend eine PNG-Datei. Kein Konto, keine Cloud."
+                )
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
 
@@ -186,7 +199,8 @@ struct OnboardingView: View {
                 .tint(pileAccent)
                 .disabled(!model.screenPermission)
                 .keyboardShortcut(.defaultAction)
-                .accessibilityHint(model.screenPermission ? "Startet die Bereichsauswahl" : "Erst Bildschirmaufnahme erlauben")
+                .accessibilityHint(
+                    model.screenPermission ? "Startet die Bereichsauswahl" : "Erst Bildschirmaufnahme erlauben")
             }
             .controlSize(.large)
         }

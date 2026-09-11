@@ -1,15 +1,20 @@
 import AppKit
 import XCTest
+
 @testable import SnapPileCore
 
 @MainActor
 final class ScreenshotStoreTests: XCTestCase {
     private func png(_ color: NSColor = .red, width: Int = 10, height: Int = 10) -> Data {
-        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
-                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
-                                   isPlanar: false, colorSpaceName: .deviceRGB,
-                                   bytesPerRow: width * 4, bitsPerPixel: 32)!
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+            isPlanar: false, colorSpaceName: .deviceRGB,
+            bytesPerRow: width * 4, bitsPerPixel: 32)!
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
         color.usingColorSpace(.deviceRGB)!.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
         for index in stride(from: 0, to: width * height * 4, by: 4) {
             rep.bitmapData![index] = UInt8(red * 255)
@@ -21,7 +26,8 @@ final class ScreenshotStoreTests: XCTestCase {
     }
 
     func testAddsAndTracksBytes() throws {
-        let data = png(); let store = ScreenshotStore()
+        let data = png()
+        let store = ScreenshotStore()
         let id = try store.add(pngData: data, pixelWidth: 10, pixelHeight: 10)
         XCTAssertEqual(store.item(id: id)?.pngData, data)
         XCTAssertEqual(store.totalBytes, data.count)
@@ -33,9 +39,14 @@ final class ScreenshotStoreTests: XCTestCase {
         let store = ScreenshotStore(expiryMinutes: 1, now: { clock })
         let old = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10, createdAt: clock)
         let pinned = try store.add(pngData: png(.blue), pixelWidth: 10, pixelHeight: 10, createdAt: clock)
-        store.togglePin(id: pinned); clock.addTimeInterval(61); store.removeExpired()
-        XCTAssertNil(store.item(id: old)); XCTAssertNotNil(store.item(id: pinned))
-        store.togglePin(id: pinned); store.removeExpired(); XCTAssertNil(store.item(id: pinned))
+        store.togglePin(id: pinned)
+        clock.addTimeInterval(61)
+        store.removeExpired()
+        XCTAssertNil(store.item(id: old))
+        XCTAssertNotNil(store.item(id: pinned))
+        store.togglePin(id: pinned)
+        store.removeExpired()
+        XCTAssertNil(store.item(id: pinned))
     }
 
     func testExpiresAtExactDeadline() throws {
@@ -47,15 +58,21 @@ final class ScreenshotStoreTests: XCTestCase {
         clock = start.addingTimeInterval(60)
         store.removeExpired()
 
-        XCTAssertNil(store.item(id: id), "Ein unangehefteter Screenshot soll am exakten Ablaufzeitpunkt entfernt werden")
+        XCTAssertNil(
+            store.item(id: id), "Ein unangehefteter Screenshot soll am exakten Ablaufzeitpunkt entfernt werden")
     }
 
     func testEvictsOldestUnpinned() throws {
         let store = ScreenshotStore(maxItems: 2)
-        let first = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 1))
-        let second = try store.add(pngData: png(.blue), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 2))
-        let third = try store.add(pngData: png(.green), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 3))
-        XCTAssertNil(store.item(id: first)); XCTAssertNotNil(store.item(id: second)); XCTAssertNotNil(store.item(id: third))
+        let first = try store.add(
+            pngData: png(), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 1))
+        let second = try store.add(
+            pngData: png(.blue), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 2))
+        let third = try store.add(
+            pngData: png(.green), pixelWidth: 10, pixelHeight: 10, createdAt: Date(timeIntervalSince1970: 3))
+        XCTAssertNil(store.item(id: first))
+        XCTAssertNotNil(store.item(id: second))
+        XCTAssertNotNil(store.item(id: third))
     }
 
     func testPinnedCapacityFailureIsAtomic() throws {
@@ -87,12 +104,15 @@ final class ScreenshotStoreTests: XCTestCase {
 
     func testItemsAreNewestFirstForDeterministicDistinctDates() throws {
         let store = ScreenshotStore(maxItems: 10)
-        let oldest = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 1))
-        let newest = try store.add(pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 3))
-        let middle = try store.add(pngData: png(.green), pixelWidth: 10, pixelHeight: 10,
-                                    createdAt: Date(timeIntervalSince1970: 2))
+        let oldest = try store.add(
+            pngData: png(), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 1))
+        let newest = try store.add(
+            pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 3))
+        let middle = try store.add(
+            pngData: png(.green), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 2))
 
         XCTAssertEqual(store.items.map(\.id), [newest, middle, oldest])
     }
@@ -108,12 +128,15 @@ final class ScreenshotStoreTests: XCTestCase {
 
     func testReducingMaxItemsEvictsOldestUnpinnedImmediately() throws {
         let store = ScreenshotStore(maxItems: 3)
-        let oldest = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 1))
-        let middle = try store.add(pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 2))
-        let newest = try store.add(pngData: png(.green), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 3))
+        let oldest = try store.add(
+            pngData: png(), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 1))
+        let middle = try store.add(
+            pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 2))
+        let newest = try store.add(
+            pngData: png(.green), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 3))
 
         store.maxItems = 2
 
@@ -123,10 +146,12 @@ final class ScreenshotStoreTests: XCTestCase {
 
     func testReducingMaxItemsKeepsPinnedItemsUntilUnpinned() throws {
         let store = ScreenshotStore(maxItems: 2)
-        let oldest = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 1))
-        let middle = try store.add(pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
-                                   createdAt: Date(timeIntervalSince1970: 2))
+        let oldest = try store.add(
+            pngData: png(), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 1))
+        let middle = try store.add(
+            pngData: png(.blue), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 2))
         store.togglePin(id: oldest)
         store.togglePin(id: middle)
 

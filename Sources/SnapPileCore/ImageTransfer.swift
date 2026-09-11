@@ -15,8 +15,10 @@ public enum ImageTransfer {
         return pasteboard.writeObjects([pasteboardItem])
     }
 
-    public static func save(_ item: ScreenshotItem,
-                            completion: @escaping (Result<URL?, Error>) -> Void) {
+    public static func save(
+        _ item: ScreenshotItem,
+        completion: @escaping (Result<URL?, Error>) -> Void
+    ) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true

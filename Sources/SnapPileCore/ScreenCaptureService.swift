@@ -1,6 +1,6 @@
 import AppKit
-import ScreenCaptureKit
 import ImageIO
+import ScreenCaptureKit
 import UniformTypeIdentifiers
 
 public struct CaptureSelection: Sendable, Equatable {
@@ -30,14 +30,17 @@ public struct CapturedImage: Sendable {
 
 public enum CaptureGeometry {
     public static func topLeftRect(for selection: CaptureSelection) -> CGRect {
-        CGRect(x: selection.rect.minX - selection.screenFrame.minX,
-               y: selection.screenFrame.maxY - selection.rect.maxY,
-               width: selection.rect.width, height: selection.rect.height)
+        CGRect(
+            x: selection.rect.minX - selection.screenFrame.minX,
+            y: selection.screenFrame.maxY - selection.rect.maxY,
+            width: selection.rect.width, height: selection.rect.height)
     }
 
     public static func outputPixelSize(for selection: CaptureSelection, scale: CGFloat) -> (width: Int, height: Int) {
-        (max(1, Int((selection.rect.width * scale).rounded())),
-         max(1, Int((selection.rect.height * scale).rounded())))
+        (
+            max(1, Int((selection.rect.width * scale).rounded())),
+            max(1, Int((selection.rect.height * scale).rounded()))
+        )
     }
 }
 
@@ -71,10 +74,12 @@ public final class ScreenCaptureService {
     public func capture(selection: CaptureSelection) async throws -> CapturedImage {
         guard hasPermission else { throw ScreenCaptureError.permissionDenied }
         guard selection.rect.width >= 2, selection.rect.height >= 2,
-              selection.screenFrame.contains(selection.rect),
-              let screen = NSScreen.screens.first(where: {
-                  ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == selection.displayID
-              }), screen.frame == selection.screenFrame else { throw ScreenCaptureError.displayUnavailable }
+            selection.screenFrame.contains(selection.rect),
+            let screen = NSScreen.screens.first(where: {
+                ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+                    == selection.displayID
+            }), screen.frame == selection.screenFrame
+        else { throw ScreenCaptureError.displayUnavailable }
 
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == selection.displayID }) else {
@@ -103,8 +108,9 @@ public final class ScreenCaptureService {
         configuration.showsCursor = false
 
         let image: CGImage
-        do { image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration) }
-        catch { throw ScreenCaptureError.captureFailed }
+        do {
+            image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        } catch { throw ScreenCaptureError.captureFailed }
         let width = image.width
         let height = image.height
         let data = try await Task.detached(priority: .userInitiated) {

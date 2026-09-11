@@ -35,9 +35,11 @@ public struct StackScrollGesture {
 
     /// Returns `+1` for next, `-1` for previous, or `nil` when no navigation
     /// step is warranted by this event.
-    public mutating func step(deltaX: CGFloat, deltaY: CGFloat, precise: Bool,
-                              phase: NSEvent.Phase, momentumPhase: NSEvent.Phase,
-                              timestamp: TimeInterval) -> Int? {
+    public mutating func step(
+        deltaX: CGFloat, deltaY: CGFloat, precise: Bool,
+        phase: NSEvent.Phase, momentumPhase: NSEvent.Phase,
+        timestamp: TimeInterval
+    ) -> Int? {
         // Phase transitions must be processed even when macOS supplies a zero
         // delta (common for BEGAN, ENDED, and CANCELLED events).
         if phase.contains(.began) {
@@ -49,7 +51,7 @@ public struct StackScrollGesture {
             return nil
         }
         if precise && !phase.isEmpty && !physicalGesture {
-            physicalGesture = true // enter a gesture stream after BEGAN was missed
+            physicalGesture = true  // enter a gesture stream after BEGAN was missed
         }
         guard momentumPhase.isEmpty else { return nil }
 
@@ -64,7 +66,8 @@ public struct StackScrollGesture {
         guard deltaX != 0 || deltaY != 0 else { return finishIfNeeded(phase) }
 
         if precise && phase.isEmpty, let lastTimestamp,
-           timestamp - lastTimestamp > phaseLessGap {
+            timestamp - lastTimestamp > phaseLessGap
+        {
             axis = nil
             axisProbeX = 0
             axisProbeY = 0
@@ -94,7 +97,8 @@ public struct StackScrollGesture {
         accumulated += delta
 
         guard abs(accumulated) >= threshold,
-              !(physicalGesture && emittedForPhysicalGesture) else {
+            !(physicalGesture && emittedForPhysicalGesture)
+        else {
             return finishIfNeeded(phase)
         }
         emittedForPhysicalGesture = physicalGesture
@@ -106,9 +110,10 @@ public struct StackScrollGesture {
     }
 
     public mutating func step(for event: NSEvent) -> Int? {
-        step(deltaX: event.scrollingDeltaX, deltaY: event.scrollingDeltaY,
-             precise: event.hasPreciseScrollingDeltas, phase: event.phase,
-             momentumPhase: event.momentumPhase, timestamp: event.timestamp)
+        step(
+            deltaX: event.scrollingDeltaX, deltaY: event.scrollingDeltaY,
+            precise: event.hasPreciseScrollingDeltas, phase: event.phase,
+            momentumPhase: event.momentumPhase, timestamp: event.timestamp)
     }
 
     private mutating func finishIfNeeded(_ phase: NSEvent.Phase) -> Int? {

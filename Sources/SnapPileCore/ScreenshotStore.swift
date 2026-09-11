@@ -12,8 +12,10 @@ public struct ScreenshotItem: Identifiable {
     public let createdAt: Date
     public internal(set) var isPinned: Bool
 
-    public init(id: UUID = UUID(), pngData: Data, thumbnail: NSImage, pixelWidth: Int,
-                pixelHeight: Int, createdAt: Date, isPinned: Bool = false) {
+    public init(
+        id: UUID = UUID(), pngData: Data, thumbnail: NSImage, pixelWidth: Int,
+        pixelHeight: Int, createdAt: Date, isPinned: Bool = false
+    ) {
         self.id = id
         self.pngData = pngData
         self.thumbnail = thumbnail
@@ -45,7 +47,8 @@ public enum ScreenshotStoreError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidPNG: return "Die Datei ist kein gültiges PNG-Bild."
-        case .invalidDimensions: return "Die angegebenen Bildabmessungen sind ungültig oder stimmen nicht mit dem PNG überein."
+        case .invalidDimensions:
+            return "Die angegebenen Bildabmessungen sind ungültig oder stimmen nicht mit dem PNG überein."
         case .imageTooLarge: return "Das PNG überschreitet das Speicherlimit."
         case .capacityExceeded: return "Das Bild kann wegen angehefteter Screenshots nicht aufgenommen werden."
         }
@@ -61,8 +64,10 @@ public final class ScreenshotStore: ObservableObject {
     public let byteLimit: Int
     private let now: () -> Date
 
-    public init(maxItems: Int = 20, expiryMinutes: Int = 30,
-                byteLimit: Int = 256 * 1024 * 1024, now: @escaping () -> Date = Date.init) {
+    public init(
+        maxItems: Int = 20, expiryMinutes: Int = 30,
+        byteLimit: Int = 256 * 1024 * 1024, now: @escaping () -> Date = Date.init
+    ) {
         self.maxItems = max(1, maxItems)
         self.expiryMinutes = expiryMinutes
         self.byteLimit = max(0, byteLimit)
@@ -72,42 +77,52 @@ public final class ScreenshotStore: ObservableObject {
     public var totalBytes: Int { items.reduce(0) { $0 + $1.pngData.count } }
 
     @discardableResult
-    public func add(pngData: Data, pixelWidth: Int, pixelHeight: Int,
-                    createdAt: Date? = nil) throws -> UUID {
+    public func add(
+        pngData: Data, pixelWidth: Int, pixelHeight: Int,
+        createdAt: Date? = nil
+    ) throws -> UUID {
         guard pngData.count <= byteLimit else { throw ScreenshotStoreError.imageTooLarge }
         guard pixelWidth > 0, pixelHeight > 0 else { throw ScreenshotStoreError.invalidDimensions }
         guard let source = CGImageSourceCreateWithData(pngData as CFData, nil),
-              CGImageSourceGetCount(source) > 0,
-              CGImageSourceGetType(source) == UTType.png.identifier as CFString,
-              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
-              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue else {
+            CGImageSourceGetCount(source) > 0,
+            CGImageSourceGetType(source) == UTType.png.identifier as CFString,
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+            let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
+        else {
             throw ScreenshotStoreError.invalidPNG
         }
         guard width == pixelWidth, height == pixelHeight else { throw ScreenshotStoreError.invalidDimensions }
-        guard let thumbnailCG = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: 520,
-            kCGImageSourceCreateThumbnailWithTransform: true
-        ] as CFDictionary) else {
+        guard
+            let thumbnailCG = CGImageSourceCreateThumbnailAtIndex(
+                source, 0,
+                [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceThumbnailMaxPixelSize: 520,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                ] as CFDictionary)
+        else {
             throw ScreenshotStoreError.invalidPNG
         }
 
         let id = UUID()
         let date = createdAt ?? now()
         let size = NSSize(width: thumbnailCG.width, height: thumbnailCG.height)
-        let candidate = ScreenshotItem(id: id, pngData: pngData,
-                                       thumbnail: NSImage(cgImage: thumbnailCG, size: size),
-                                       pixelWidth: pixelWidth, pixelHeight: pixelHeight,
-                                       createdAt: date)
+        let candidate = ScreenshotItem(
+            id: id, pngData: pngData,
+            thumbnail: NSImage(cgImage: thumbnailCG, size: size),
+            pixelWidth: pixelWidth, pixelHeight: pixelHeight,
+            createdAt: date)
 
         // Calculate admission on a copy first. This keeps the operation atomic on failure.
         var accepted = items
         accepted.insert(candidate, at: 0)
         while accepted.count > max(1, maxItems) || accepted.reduce(0, { $0 + $1.pngData.count }) > byteLimit {
-            guard let index = accepted.enumerated()
-                .filter({ !$0.element.isPinned && $0.element.id != id })
-                .min(by: { $0.element.createdAt < $1.element.createdAt })?.offset else {
+            guard
+                let index = accepted.enumerated()
+                    .filter({ !$0.element.isPinned && $0.element.id != id })
+                    .min(by: { $0.element.createdAt < $1.element.createdAt })?.offset
+            else {
                 throw ScreenshotStoreError.capacityExceeded
             }
             accepted.remove(at: index)
@@ -127,8 +142,7 @@ public final class ScreenshotStore: ObservableObject {
     public func remove(id: UUID) { items.removeAll { $0.id == id } }
 
     public func removeAll(includingPinned: Bool = false) {
-        if includingPinned { items.removeAll() }
-        else { items.removeAll { !$0.isPinned } }
+        if includingPinned { items.removeAll() } else { items.removeAll { !$0.isPinned } }
     }
 
     public func togglePin(id: UUID) {

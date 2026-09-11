@@ -44,12 +44,16 @@ public final class TemporaryScreenshotFiles {
     private var checkedStaleSessions = false
     private let files = FileManager.default
 
-    public init(baseDirectory: URL? = nil, retention: TimeInterval = 30 * 60,
-                byteLimit: Int = 256 * 1024 * 1024, fileLimit: Int = 50,
-                now: @escaping () -> Date = Date.init) {
+    public init(
+        baseDirectory: URL? = nil, retention: TimeInterval = 30 * 60,
+        byteLimit: Int = 256 * 1024 * 1024, fileLimit: Int = 50,
+        now: @escaping () -> Date = Date.init
+    ) {
         precondition(retention > 0 && byteLimit >= 0 && fileLimit > 0)
         let identifier = Bundle.main.bundleIdentifier ?? "de.wdnhfr.snappile"
-        let base = baseDirectory ?? FileManager.default.temporaryDirectory
+        let base =
+            baseDirectory
+            ?? FileManager.default.temporaryDirectory
             .appendingPathComponent("\(identifier)-drag", isDirectory: true)
         self.baseDirectory = base
         sessionDirectory = base.appendingPathComponent("\(getpid())-\(UUID().uuidString)", isDirectory: true)
@@ -70,7 +74,8 @@ public final class TemporaryScreenshotFiles {
         }
         removeEntry(item.id)
         guard entries.count < fileLimit,
-              item.pngData.count <= byteLimit - entries.values.reduce(0, { $0 + $1.byteCount }) else {
+            item.pngData.count <= byteLimit - entries.values.reduce(0, { $0 + $1.byteCount })
+        else {
             throw ScreenshotDragError.capacityExceeded
         }
 
@@ -86,8 +91,9 @@ public final class TemporaryScreenshotFiles {
             try? files.removeItem(at: directory)
             throw ScreenshotDragError.preparationFailed
         }
-        entries[item.id] = Entry(url: url, byteCount: item.pngData.count,
-                                 expiresAt: now().addingTimeInterval(retention), activeLeases: [leaseID])
+        entries[item.id] = Entry(
+            url: url, byteCount: item.pngData.count,
+            expiresAt: now().addingTimeInterval(retention), activeLeases: [leaseID])
         return ScreenshotDragFile(url: url, itemID: item.id, leaseID: leaseID)
     }
 
@@ -126,12 +132,14 @@ public final class TemporaryScreenshotFiles {
 
     private func createPrivateDirectory(_ url: URL) throws {
         if !files.fileExists(atPath: url.path) {
-            try files.createDirectory(at: url, withIntermediateDirectories: false,
-                                      attributes: [.posixPermissions: 0o700])
+            try files.createDirectory(
+                at: url, withIntermediateDirectories: false,
+                attributes: [.posixPermissions: 0o700])
         }
         let attributes = try files.attributesOfItem(atPath: url.path)
         guard attributes[.type] as? FileAttributeType == .typeDirectory,
-              (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == geteuid() else {
+            (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == geteuid()
+        else {
             throw ScreenshotDragError.preparationFailed
         }
         try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
@@ -139,15 +147,17 @@ public final class TemporaryScreenshotFiles {
 
     private func removeStaleSessions() {
         guard let attributes = try? files.attributesOfItem(atPath: baseDirectory.path),
-              attributes[.type] as? FileAttributeType == .typeDirectory,
-              (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == geteuid(),
-              let children = try? files.contentsOfDirectory(at: baseDirectory, includingPropertiesForKeys: nil) else { return }
+            attributes[.type] as? FileAttributeType == .typeDirectory,
+            (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == geteuid(),
+            let children = try? files.contentsOfDirectory(at: baseDirectory, includingPropertiesForKeys: nil)
+        else { return }
         for directory in children {
             let parts = directory.lastPathComponent.split(separator: "-", maxSplits: 1)
             guard parts.count == 2, let pid = Int32(parts[0]), pid > 0,
-                  UUID(uuidString: String(parts[1])) != nil,
-                  let info = try? files.attributesOfItem(atPath: directory.path),
-                  info[.type] as? FileAttributeType == .typeDirectory else { continue }
+                UUID(uuidString: String(parts[1])) != nil,
+                let info = try? files.attributesOfItem(atPath: directory.path),
+                info[.type] as? FileAttributeType == .typeDirectory
+            else { continue }
             // Never clean another running instance's export directory.
             if kill(pid, 0) == -1 && errno == ESRCH { try? files.removeItem(at: directory) }
         }

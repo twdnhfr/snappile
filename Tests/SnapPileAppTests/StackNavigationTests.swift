@@ -1,7 +1,8 @@
 import AppKit
 import ImageIO
-import XCTest
 import UniformTypeIdentifiers
+import XCTest
+
 @testable import SnapPile
 @testable import SnapPileCore
 
@@ -143,15 +144,17 @@ final class StackNavigationTests: XCTestCase {
 
     @discardableResult
     private func addItem(to store: ScreenshotStore, width: Int, height: Int, time: TimeInterval) throws -> UUID {
-        try store.add(pngData: syntheticPNG(width: width, height: height), pixelWidth: width,
-                      pixelHeight: height, createdAt: Date(timeIntervalSince1970: time))
+        try store.add(
+            pngData: syntheticPNG(width: width, height: height), pixelWidth: width,
+            pixelHeight: height, createdAt: Date(timeIntervalSince1970: time))
     }
 
     private func syntheticPNG(width: Int, height: Int) throws -> Data {
-        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
-                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
-                                   isPlanar: false, colorSpaceName: .deviceRGB,
-                                   bytesPerRow: width * 4, bitsPerPixel: 32)!
+        let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+            isPlanar: false, colorSpaceName: .deviceRGB,
+            bytesPerRow: width * 4, bitsPerPixel: 32)!
         for y in 0..<height {
             for x in 0..<width {
                 let offset = (y * width + x) * 4

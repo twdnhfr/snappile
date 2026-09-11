@@ -11,7 +11,10 @@ public struct DraggableThumbnail: NSViewRepresentable {
     public let onDragError: (String) -> Void
     public let contentMode: ThumbnailContentMode
 
-    public init(item: ScreenshotItem, onClick: @escaping () -> Void, onDragError: @escaping (String) -> Void = { _ in }, contentMode: ThumbnailContentMode = .fit) {
+    public init(
+        item: ScreenshotItem, onClick: @escaping () -> Void, onDragError: @escaping (String) -> Void = { _ in },
+        contentMode: ThumbnailContentMode = .fit
+    ) {
         self.item = item
         self.onClick = onClick
         self.onDragError = onDragError
@@ -37,8 +40,10 @@ public struct DraggableThumbnail: NSViewRepresentable {
         private var activeFile: ScreenshotDragFile?
         private var activeItem: NSPasteboardItem?
 
-        fileprivate func beginDrag(item: ScreenshotItem, from view: ThumbnailView, event: NSEvent,
-                                   onError: (String) -> Void) {
+        fileprivate func beginDrag(
+            item: ScreenshotItem, from view: ThumbnailView, event: NSEvent,
+            onError: (String) -> Void
+        ) {
             do {
                 let file = try TemporaryScreenshotFiles.shared.beginDrag(for: item)
                 activeFile = file
@@ -53,12 +58,16 @@ public struct DraggableThumbnail: NSViewRepresentable {
             }
         }
 
-        public func draggingSession(_ session: NSDraggingSession,
-                                    sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation { .copy }
+        public func draggingSession(
+            _ session: NSDraggingSession,
+            sourceOperationMaskFor context: NSDraggingContext
+        ) -> NSDragOperation { .copy }
 
-        public func draggingSession(_ session: NSDraggingSession,
-                                    endedAt screenPoint: NSPoint,
-                                    operation: NSDragOperation) {
+        public func draggingSession(
+            _ session: NSDraggingSession,
+            endedAt screenPoint: NSPoint,
+            operation: NSDragOperation
+        ) {
             if let activeFile { TemporaryScreenshotFiles.shared.finishDrag(activeFile) }
             activeFile = nil
             activeItem = nil
@@ -74,7 +83,10 @@ public struct DraggableThumbnail: NSViewRepresentable {
         private var mouseDownPoint: NSPoint = .zero
         private var didStartDrag = false
 
-        fileprivate func update(item: ScreenshotItem, onClick: @escaping () -> Void, onDragError: @escaping (String) -> Void, contentMode: ThumbnailContentMode) {
+        fileprivate func update(
+            item: ScreenshotItem, onClick: @escaping () -> Void, onDragError: @escaping (String) -> Void,
+            contentMode: ThumbnailContentMode
+        ) {
             self.item = item
             clickAction = onClick
             dragError = onDragError
@@ -93,8 +105,9 @@ public struct DraggableThumbnail: NSViewRepresentable {
             let rect = Self.drawRect(imageSize: image.size, in: bounds, contentMode: contentMode)
             NSGraphicsContext.saveGraphicsState()
             bounds.clip()
-            image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1,
-                       respectFlipped: isFlipped, hints: nil)
+            image.draw(
+                in: rect, from: .zero, operation: .sourceOver, fraction: 1,
+                respectFlipped: isFlipped, hints: nil)
             NSGraphicsContext.restoreGraphicsState()
         }
 
@@ -107,8 +120,9 @@ public struct DraggableThumbnail: NSViewRepresentable {
             case .fill: scale = max(bounds.width / imageWidth, bounds.height / imageHeight)
             }
             let size = NSSize(width: imageWidth * scale, height: imageHeight * scale)
-            return NSRect(x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2,
-                          width: size.width, height: size.height)
+            return NSRect(
+                x: bounds.midX - size.width / 2, y: bounds.midY - size.height / 2,
+                width: size.width, height: size.height)
         }
 
         public override func mouseDown(with event: NSEvent) {

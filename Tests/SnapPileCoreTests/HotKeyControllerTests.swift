@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import SnapPileCore
 
 final class HotKeyControllerTests: XCTestCase {
@@ -22,13 +23,17 @@ final class HotKeyControllerTests: XCTestCase {
 
     func testDeviceSpecificOptionFlagsTrackLeftAndRightIndependently() {
         let left = OptionModifierSnapshot(rawFlags: 0x80020)
-        XCTAssertTrue(left.leftDown); XCTAssertFalse(left.rightDown)
+        XCTAssertTrue(left.leftDown)
+        XCTAssertFalse(left.rightDown)
         let both = OptionModifierSnapshot(rawFlags: 0x80060)
-        XCTAssertTrue(both.leftDown); XCTAssertTrue(both.rightDown)
+        XCTAssertTrue(both.leftDown)
+        XCTAssertTrue(both.rightDown)
         let right = OptionModifierSnapshot(rawFlags: 0x80040)
-        XCTAssertFalse(right.leftDown); XCTAssertTrue(right.rightDown)
+        XCTAssertFalse(right.leftDown)
+        XCTAssertTrue(right.rightDown)
         let released = OptionModifierSnapshot(rawFlags: 0x60)
-        XCTAssertFalse(released.leftDown); XCTAssertFalse(released.rightDown)
+        XCTAssertFalse(released.leftDown)
+        XCTAssertFalse(released.rightDown)
     }
 
     func testRawModifierEventSequenceTriggersAndRearmsWithoutGlobalKeyPolling() {
@@ -43,7 +48,7 @@ final class HotKeyControllerTests: XCTestCase {
         XCTAssertFalse(feed(0x80040))
         XCTAssertTrue(feed(0x80060))
         XCTAssertFalse(feed(0))
-        XCTAssertFalse(feed(0x180060)) // Command + both Option
+        XCTAssertFalse(feed(0x180060))  // Command + both Option
         XCTAssertFalse(feed(0x80060))  // Command release does not trigger
         XCTAssertFalse(feed(0x80020))
         XCTAssertTrue(feed(0x80060))

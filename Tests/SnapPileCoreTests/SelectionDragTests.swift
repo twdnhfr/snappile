@@ -1,32 +1,42 @@
 import AppKit
 import XCTest
+
 @testable import SnapPileCore
 
 final class SelectionDragTests: XCTestCase {
     private let bounds = CGRect(x: 0, y: 0, width: 800, height: 600)
 
     func testResizePreservesAllDragDirections() {
-        for point in [CGPoint(x: 300, y: 250), CGPoint(x: 100, y: 250),
-                      CGPoint(x: 300, y: 100), CGPoint(x: 100, y: 100)] {
+        for point in [
+            CGPoint(x: 300, y: 250), CGPoint(x: 100, y: 250),
+            CGPoint(x: 300, y: 100), CGPoint(x: 100, y: 100),
+        ] {
             var state = SelectionDragState(bounds: bounds)
-            state.begin(at: CGPoint(x: 200, y: 180)); state.update(to: point)
-            XCTAssertEqual(state.current, CGRect(x: min(200, point.x), y: min(180, point.y),
-                                                 width: abs(point.x - 200), height: abs(point.y - 180)))
+            state.begin(at: CGPoint(x: 200, y: 180))
+            state.update(to: point)
+            XCTAssertEqual(
+                state.current,
+                CGRect(
+                    x: min(200, point.x), y: min(180, point.y),
+                    width: abs(point.x - 200), height: abs(point.y - 180)))
         }
     }
 
     func testResizeCanCrossTheAnchorAndUsesMinAbs() {
         var state = SelectionDragState(bounds: bounds)
-        state.begin(at: CGPoint(x: 200, y: 180)); state.update(to: CGPoint(x: 300, y: 250))
+        state.begin(at: CGPoint(x: 200, y: 180))
+        state.update(to: CGPoint(x: 300, y: 250))
         state.update(to: CGPoint(x: 100, y: 100))
         XCTAssertEqual(state.current, CGRect(x: 100, y: 100, width: 100, height: 80))
     }
 
     func testMovingKeepsSizeAndResumesResizeWithoutJump() {
         var state = SelectionDragState(bounds: bounds)
-        state.begin(at: CGPoint(x: 200, y: 180)); state.update(to: CGPoint(x: 350, y: 300))
+        state.begin(at: CGPoint(x: 200, y: 180))
+        state.update(to: CGPoint(x: 350, y: 300))
         let size = state.current.size
-        state.setMoving(true, at: CGPoint(x: 350, y: 300)); state.update(to: CGPoint(x: 400, y: 320))
+        state.setMoving(true, at: CGPoint(x: 350, y: 300))
+        state.update(to: CGPoint(x: 400, y: 320))
         XCTAssertEqual(state.current.size, size)
         let moved = state.current
         state.setMoving(false, at: CGPoint(x: 400, y: 320))
@@ -37,12 +47,16 @@ final class SelectionDragTests: XCTestCase {
 
     func testMovingClampsToDisplayAndRepeatedTransitionsAreIdempotent() {
         var state = SelectionDragState(bounds: bounds)
-        state.begin(at: CGPoint(x: 100, y: 100)); state.update(to: CGPoint(x: 300, y: 250))
-        state.setMoving(true, at: CGPoint(x: 200, y: 180)); state.setMoving(true, at: CGPoint(x: 200, y: 180))
+        state.begin(at: CGPoint(x: 100, y: 100))
+        state.update(to: CGPoint(x: 300, y: 250))
+        state.setMoving(true, at: CGPoint(x: 200, y: 180))
+        state.setMoving(true, at: CGPoint(x: 200, y: 180))
         state.update(to: CGPoint(x: 800, y: 600))
-        XCTAssertEqual(state.current.maxX, bounds.maxX); XCTAssertEqual(state.current.maxY, bounds.maxY)
+        XCTAssertEqual(state.current.maxX, bounds.maxX)
+        XCTAssertEqual(state.current.maxY, bounds.maxY)
         let clamped = state.current
-        state.setMoving(false, at: CGPoint(x: 800, y: 600)); state.setMoving(false, at: CGPoint(x: 800, y: 600))
+        state.setMoving(false, at: CGPoint(x: 800, y: 600))
+        state.setMoving(false, at: CGPoint(x: 800, y: 600))
         XCTAssertEqual(state.current, clamped)
         state.update(to: CGPoint(x: 800, y: 600))
         XCTAssertEqual(state.current, clamped)
@@ -50,10 +64,13 @@ final class SelectionDragTests: XCTestCase {
 
     func testRawPointerOutsideDisplayDoesNotMoveResizeBaseline() {
         var state = SelectionDragState(bounds: bounds)
-        state.begin(at: CGPoint(x: 200, y: 180)); state.update(to: CGPoint(x: 350, y: 300))
-        state.setMoving(true, at: CGPoint(x: 350, y: 300)); state.update(to: CGPoint(x: 900, y: 700))
+        state.begin(at: CGPoint(x: 200, y: 180))
+        state.update(to: CGPoint(x: 350, y: 300))
+        state.setMoving(true, at: CGPoint(x: 350, y: 300))
+        state.update(to: CGPoint(x: 900, y: 700))
         let moved = state.current
-        state.setMoving(false, at: CGPoint(x: 900, y: 700)); state.update(to: CGPoint(x: 900, y: 700))
+        state.setMoving(false, at: CGPoint(x: 900, y: 700))
+        state.update(to: CGPoint(x: 900, y: 700))
         XCTAssertEqual(state.current, moved)
     }
 
@@ -72,10 +89,13 @@ final class SelectionDragTests: XCTestCase {
     }
 
     func testMovingInEveryDirectionThenResizingKeepsTheActiveCorner() {
-        for end in [CGPoint(x: 350, y: 300), CGPoint(x: 50, y: 300),
-                    CGPoint(x: 350, y: 60), CGPoint(x: 50, y: 60)] {
+        for end in [
+            CGPoint(x: 350, y: 300), CGPoint(x: 50, y: 300),
+            CGPoint(x: 350, y: 60), CGPoint(x: 50, y: 60),
+        ] {
             var state = SelectionDragState(bounds: bounds)
-            state.begin(at: CGPoint(x: 200, y: 180)); state.update(to: end)
+            state.begin(at: CGPoint(x: 200, y: 180))
+            state.update(to: end)
             let size = state.current.size
             state.setMoving(true, at: end)
             let movedPointer = CGPoint(x: end.x + 25, y: end.y + 30)
@@ -104,7 +124,9 @@ final class SelectionDragTests: XCTestCase {
         _ = NSApplication.shared
         var pointer = CGPoint(x: 350, y: 300)
         var results: [CaptureSelection?] = []
-        let view = SelectionOverlayView(screenFrame: CGRect(x: -800, y: 40, width: 800, height: 600)) { results.append($0) }
+        let view = SelectionOverlayView(screenFrame: CGRect(x: -800, y: 40, width: 800, height: 600)) {
+            results.append($0)
+        }
         view.currentMousePoint = { pointer }
         view.mouseDown(with: try mouse(.leftMouseDown, at: CGPoint(x: 200, y: 180)))
         view.mouseDragged(with: try mouse(.leftMouseDragged, at: pointer))
@@ -117,8 +139,9 @@ final class SelectionDragTests: XCTestCase {
         pointer = CGPoint(x: 30, y: 20)
         view.mouseUp(with: try mouse(.leftMouseUp, at: pointer))
         XCTAssertEqual(results.count, 1)
-        XCTAssertEqual(try XCTUnwrap(results.first ?? nil).rect,
-                       CGRect(x: -800, y: 40, width: 180, height: 140))
+        XCTAssertEqual(
+            try XCTUnwrap(results.first ?? nil).rect,
+            CGRect(x: -800, y: 40, width: 180, height: 140))
     }
 
     @MainActor
@@ -140,15 +163,19 @@ final class SelectionDragTests: XCTestCase {
 
     @MainActor
     private func mouse(_ type: NSEvent.EventType, at point: CGPoint) throws -> NSEvent {
-        try XCTUnwrap(NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: 0,
-                                        windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
+        try XCTUnwrap(
+            NSEvent.mouseEvent(
+                with: type, location: point, modifierFlags: [], timestamp: 0,
+                windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
     }
 
     @MainActor
     private func key(_ type: NSEvent.EventType, code: UInt16, repeating: Bool = false) throws -> NSEvent {
         // Deliberately unrelated location: keyboard events are not pointer samples.
-        try XCTUnwrap(NSEvent.keyEvent(with: type, location: CGPoint(x: 799, y: 599), modifierFlags: [],
-                                      timestamp: 0, windowNumber: 0, context: nil, characters: " ",
-                                      charactersIgnoringModifiers: " ", isARepeat: repeating, keyCode: code))
+        try XCTUnwrap(
+            NSEvent.keyEvent(
+                with: type, location: CGPoint(x: 799, y: 599), modifierFlags: [],
+                timestamp: 0, windowNumber: 0, context: nil, characters: " ",
+                charactersIgnoringModifiers: " ", isARepeat: repeating, keyCode: code))
     }
 }

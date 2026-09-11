@@ -9,8 +9,9 @@ enum SnapPileMain {
     @MainActor static func main() {
         let app = NSApplication.shared
         if let bundleID = Bundle.main.bundleIdentifier,
-           let other = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
-               .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }) {
+            let other = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier })
+        {
             other.activate(options: [])
             return
         }
@@ -19,13 +20,20 @@ enum SnapPileMain {
         app.delegate = delegate
         let mainMenu = NSMenu()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "SnapPile beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        let menuItem = NSMenuItem(); menuItem.submenu = appMenu; mainMenu.addItem(menuItem)
+        appMenu.addItem(
+            withTitle: "SnapPile beenden", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let menuItem = NSMenuItem()
+        menuItem.submenu = appMenu
+        mainMenu.addItem(menuItem)
         let editMenu = NSMenu(title: "Bearbeiten")
-        for (title, action, key) in [("Kopieren", "copy:", "c"), ("Einfügen", "paste:", "v"), ("Alles auswählen", "selectAll:", "a")] {
+        for (title, action, key) in [
+            ("Kopieren", "copy:", "c"), ("Einfügen", "paste:", "v"), ("Alles auswählen", "selectAll:", "a"),
+        ] {
             editMenu.addItem(withTitle: title, action: Selector(action), keyEquivalent: key)
         }
-        let editItem = NSMenuItem(title: "Bearbeiten", action: nil, keyEquivalent: ""); editItem.submenu = editMenu; mainMenu.addItem(editItem)
+        let editItem = NSMenuItem(title: "Bearbeiten", action: nil, keyEquivalent: "")
+        editItem.submenu = editMenu
+        mainMenu.addItem(editItem)
         app.mainMenu = mainMenu
         app.run()
         withExtendedLifetime(delegate) {}
@@ -74,13 +82,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
 
     var stackPosition: Int {
-        guard let item = selectedStackItem, let index = store.items.firstIndex(where: { $0.id == item.id }) else { return 0 }
+        guard let item = selectedStackItem, let index = store.items.firstIndex(where: { $0.id == item.id }) else {
+            return 0
+        }
         return index + 1
     }
 
     private func reconcileStackSelection(_ ids: [UUID]) {
         defer { previousStackIDs = ids }
-        guard let newest = ids.first else { selectedScreenshotID = nil; return }
+        guard let newest = ids.first else {
+            selectedScreenshotID = nil
+            return
+        }
         if !previousStackIDs.contains(newest) {
             selectedScreenshotID = newest
         } else if let selectedScreenshotID, ids.contains(selectedScreenshotID) {
@@ -109,21 +122,29 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         registerShortcut()
         statusController = StatusItemController(model: self)
         stackController = StackPanelController(model: self)
-        settings.$maxItems.dropFirst().sink { [weak self] value in self?.store.maxItems = value }.store(in: &subscriptions)
+        settings.$maxItems.dropFirst().sink { [weak self] value in self?.store.maxItems = value }.store(
+            in: &subscriptions)
         settings.$expiryMinutes.dropFirst().sink { [weak self] value in
-            self?.store.expiryMinutes = value; self?.store.removeExpired()
+            self?.store.expiryMinutes = value
+            self?.store.removeExpired()
         }.store(in: &subscriptions)
         settings.$side.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.stackController?.reposition() }
         }.store(in: &subscriptions)
-        settings.$doubleOptionEnabled.dropFirst().sink { [weak self] value in self?.hotKeys?.doubleOptionEnabled = value; self?.refreshPermissions() }.store(in: &subscriptions)
+        settings.$doubleOptionEnabled.dropFirst().sink { [weak self] value in
+            self?.hotKeys?.doubleOptionEnabled = value
+            self?.refreshPermissions()
+        }.store(in: &subscriptions)
         store.$items.sink { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }
                 let items = self.store.items
                 self.statusController?.updateCount(items.count)
                 self.stackController?.reposition()
-                if items.isEmpty { self.stackController?.hide(); self.isExpanded = false }
+                if items.isEmpty {
+                    self.stackController?.hide()
+                    self.isExpanded = false
+                }
                 if let id = self.previewID, !items.contains(where: { $0.id == id }) { self.closePreview() }
             }
         }.store(in: &subscriptions)
@@ -138,12 +159,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             }
         }
         if let expiryTimer { RunLoop.main.add(expiryTimer, forMode: .common) }
-        NotificationCenter.default.addObserver(self, selector: #selector(refreshPermissions), name: NSApplication.didBecomeActiveNotification, object: nil)
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(refreshPermissions), name: NSApplication.didBecomeActiveNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
         refreshPermissions()
         if ProcessInfo.processInfo.arguments.contains("--demo") {
-            insertDemoImages(); showStack(); showOnboarding()
+            insertDemoImages()
+            showStack()
+            showOnboarding()
         } else if !settings.hasCompletedOnboarding || !screenPermission {
             showOnboarding()
         }
@@ -152,16 +178,27 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         refreshPermissions()
         guard !flag else { return true }
-        if !settings.hasCompletedOnboarding || !screenPermission { showOnboarding() }
-        else if store.items.isEmpty { showSettings() } else { showStack() }
+        if !settings.hasCompletedOnboarding || !screenPermission {
+            showOnboarding()
+        } else if store.items.isEmpty {
+            showSettings()
+        } else {
+            showStack()
+        }
         return true
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         isTerminating = true
         captureGeneration = UUID()
-        captureTask?.cancel(); messageTask?.cancel(); selection.cancel()
-        expiryTimer?.invalidate(); hotKeys?.stop(); statusController?.shutdown(); stackController?.shutdown(); closePreview()
+        captureTask?.cancel()
+        messageTask?.cancel()
+        selection.cancel()
+        expiryTimer?.invalidate()
+        hotKeys?.stop()
+        statusController?.shutdown()
+        stackController?.shutdown()
+        closePreview()
         store.removeAll(includingPinned: true)
         TemporaryScreenshotFiles.shared.removeAll()
         NotificationCenter.default.removeObserver(self)
@@ -174,7 +211,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         inputPermission = hotKeys?.hasInputMonitoringPermission ?? false
         optionMonitoringIssue = hotKeys?.optionMonitoringError
     }
-    @objc private func didWake() { store.removeExpired(); TemporaryScreenshotFiles.shared.removeExpired(); refreshPermissions() }
+    @objc private func didWake() {
+        store.removeExpired()
+        TemporaryScreenshotFiles.shared.removeExpired()
+        refreshPermissions()
+    }
     @objc private func willSleep() { selection.cancel() }
 
     func requestScreenPermission() {
@@ -183,11 +224,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         if !screenPermission { openPrivacy("Privacy_ScreenCapture") }
     }
     func requestInputPermission() {
-        hotKeys?.requestInputMonitoringPermission(); refreshPermissions()
+        hotKeys?.requestInputMonitoringPermission()
+        refreshPermissions()
         if !inputPermission { openPrivacy("Privacy_ListenEvent") }
     }
     private func openPrivacy(_ pane: String) {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") { NSWorkspace.shared.open(url) }
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") {
+            NSWorkspace.shared.open(url)
+        }
     }
     func registerShortcut() {
         do {
@@ -197,13 +241,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
     func applyShortcut(keyCode: UInt32, modifiers: UInt32) -> Bool {
         guard modifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
-            shortcutError = "Bitte mindestens ⌘, ⌃ oder ⌥ wählen."; return false
+            shortcutError = "Bitte mindestens ⌘, ⌃ oder ⌥ wählen."
+            return false
         }
         do {
             try hotKeys?.register(keyCode: keyCode, modifiers: modifiers)
-            settings.shortcutKeyCode = keyCode; settings.shortcutModifiers = modifiers
-            shortcutError = nil; return true
-        } catch { shortcutError = error.localizedDescription; return false }
+            settings.shortcutKeyCode = keyCode
+            settings.shortcutModifiers = modifiers
+            shortcutError = nil
+            return true
+        } catch {
+            shortcutError = error.localizedDescription
+            return false
+        }
     }
 
     func beginCapture() {
@@ -217,20 +267,30 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         }
         if store.items.count >= settings.maxItems && store.items.allSatisfy(\.isPinned) {
             notify("Der Stapel ist voll. Löse einen Pin oder lösche ein Bild.", error: true)
-            showStack(); return
+            showStack()
+            return
         }
         isCapturing = true
-        let generation = UUID(); captureGeneration = generation
-        stackController?.hide(); settingsWindow?.orderOut(nil); onboardingWindow?.orderOut(nil); previewWindow?.orderOut(nil)
+        let generation = UUID()
+        captureGeneration = generation
+        stackController?.hide()
+        settingsWindow?.orderOut(nil)
+        onboardingWindow?.orderOut(nil)
+        previewWindow?.orderOut(nil)
         selection.begin { [weak self] result in
             guard let self, !self.isTerminating, self.captureGeneration == generation else { return }
-            guard let result else { self.isCapturing = false; self.showStack(); return }
+            guard let result else {
+                self.isCapturing = false
+                self.showStack()
+                return
+            }
             self.captureTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 do {
                     let image = try await self.captureService.capture(selection: result)
                     guard !Task.isCancelled, !self.isTerminating, self.captureGeneration == generation else { return }
-                    _ = try self.store.add(pngData: image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
+                    _ = try self.store.add(
+                        pngData: image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
                     self.stackController?.setScreen(displayID: result.displayID)
                     self.isExpanded = false
                     self.notify("Im Stapel · bereit zum Ziehen")
@@ -249,12 +309,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         stackController?.show()
     }
     func hideStack() { stackController?.hide() }
-    func toggleExpanded() { isExpanded.toggle(); stackController?.reposition(); showStack() }
+    func toggleExpanded() {
+        isExpanded.toggle()
+        stackController?.reposition()
+        showStack()
+    }
     func notify(_ text: String, error: Bool = false) {
-        messageTask?.cancel(); messageIsError = error; message = text
+        messageTask?.cancel()
+        messageIsError = error
+        message = text
         messageTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: error ? 8_000_000_000 : 3_000_000_000)
-            guard !Task.isCancelled else { return }; self?.message = nil
+            guard !Task.isCancelled else { return }
+            self?.message = nil
         }
     }
     func copy(_ id: UUID) {
@@ -278,13 +345,19 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         refreshPermissions()
         if onboardingWindow == nil {
             let height = min(740, (NSScreen.main?.visibleFrame.height ?? 800) - 60)
-            let window = NSWindow(contentRect:NSRect(x:0,y:0,width:560,height:height),styleMask:[.titled,.closable],backing:.buffered,defer:false)
-            window.title = "Willkommen bei SnapPile"; window.isReleasedWhenClosed = false; window.delegate = self
-            window.contentView = NSHostingView(rootView:OnboardingView(model:self))
-            window.center(); onboardingWindow = window
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 560, height: height), styleMask: [.titled, .closable],
+                backing: .buffered, defer: false)
+            window.title = "Willkommen bei SnapPile"
+            window.isReleasedWhenClosed = false
+            window.delegate = self
+            window.contentView = NSHostingView(rootView: OnboardingView(model: self))
+            window.center()
+            onboardingWindow = window
         }
         settingsWindow?.orderOut(nil)
-        NSApp.activate(ignoringOtherApps:true); onboardingWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        onboardingWindow?.makeKeyAndOrderFront(nil)
     }
     func dismissOnboarding() {
         // "Später" counts as completed; a missing screen permission still reopens the onboarding on launch.
@@ -293,42 +366,64 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
     func finishOnboardingAndCapture() {
         refreshPermissions()
-        guard screenPermission else { notify("Die Bildschirmfreigabe fehlt noch.",error:true); return }
+        guard screenPermission else {
+            notify("Die Bildschirmfreigabe fehlt noch.", error: true)
+            return
+        }
         settings.hasCompletedOnboarding = true
-        dismissOnboarding(); beginCapture()
+        dismissOnboarding()
+        beginCapture()
     }
     func showSettings() {
         statusController?.close()
         onboardingWindow?.orderOut(nil)
         refreshPermissions()
         if settingsWindow == nil {
-            let window = NSWindow(contentRect: NSRect(x:0,y:0,width:520,height:710), styleMask:[.titled,.closable,.miniaturizable], backing:.buffered, defer:false)
-            window.title = "SnapPile"; window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView(model:self))
-            window.center(); settingsWindow = window
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 710),
+                styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+            window.title = "SnapPile"
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: SettingsView(model: self))
+            window.center()
+            settingsWindow = window
         }
-        NSApp.activate(ignoringOtherApps: true); settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
     func preview(_ id: UUID) {
-        guard store.item(id:id) != nil else { return }
+        guard store.item(id: id) != nil else { return }
         closePreview()
-        let window = NSWindow(contentRect:NSRect(x:0,y:0,width:880,height:630), styleMask:[.titled,.closable,.resizable,.miniaturizable], backing:.buffered, defer:false)
-        window.title = "SnapPile · Vorschau"; window.isReleasedWhenClosed = false; window.delegate = self
-        window.minSize = NSSize(width:480,height:360)
-        window.contentView = NSHostingView(rootView: PreviewView(model:self, itemID:id))
-        window.center(); previewWindow = window; previewID = id
-        NSApp.activate(ignoringOtherApps:true); window.makeKeyAndOrderFront(nil)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 880, height: 630),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+        window.title = "SnapPile · Vorschau"
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.minSize = NSSize(width: 480, height: 360)
+        window.contentView = NSHostingView(rootView: PreviewView(model: self, itemID: id))
+        window.center()
+        previewWindow = window
+        previewID = id
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
     }
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
-        if window === onboardingWindow { settings.hasCompletedOnboarding = true; return }
+        if window === onboardingWindow {
+            settings.hasCompletedOnboarding = true
+            return
+        }
         guard window === previewWindow else { return }
         window.contentView = nil
-        previewWindow = nil; previewID = nil
+        previewWindow = nil
+        previewID = nil
     }
     private func closePreview() {
         let window = previewWindow
-        previewWindow = nil; previewID = nil
-        window?.contentView = nil; window?.close()
+        previewWindow = nil
+        previewID = nil
+        window?.contentView = nil
+        window?.close()
     }
 }
