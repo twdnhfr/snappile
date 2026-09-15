@@ -148,8 +148,9 @@ public final class ScreenshotStore: ObservableObject {
 
     public func togglePin(id: UUID) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        // No limit check here: pinning cannot exceed a limit, and an unpinned image
+        // stays until the next capture needs its space or it expires.
         items[index].isPinned.toggle()
-        enforceLimits()
     }
 
     public func removeExpired() {

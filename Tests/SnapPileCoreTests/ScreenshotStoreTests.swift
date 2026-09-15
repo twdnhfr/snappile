@@ -163,7 +163,7 @@ final class ScreenshotStoreTests: XCTestCase {
         XCTAssertEqual(store.items.map(\.id), [newest, middle])
     }
 
-    func testReducingMaxItemsKeepsPinnedItemsUntilUnpinned() throws {
+    func testReducingMaxItemsKeepsUnpinnedItemUntilNextCapture() throws {
         let store = ScreenshotStore(maxItems: 2)
         let oldest = try store.add(
             pngData: png(), pixelWidth: 10, pixelHeight: 10,
@@ -180,9 +180,14 @@ final class ScreenshotStoreTests: XCTestCase {
         XCTAssertNotNil(store.item(id: middle))
 
         store.togglePin(id: oldest)
-        XCTAssertEqual(store.items.count, 1)
-        XCTAssertNil(store.item(id: oldest))
-        XCTAssertNotNil(store.item(id: middle))
+        XCTAssertNotNil(store.item(id: oldest), "Unpinning never removes the image right away")
+
+        store.maxItems = 2
+
+        let newest = try store.add(
+            pngData: png(.green), pixelWidth: 10, pixelHeight: 10,
+            createdAt: Date(timeIntervalSince1970: 3))
+        XCTAssertEqual(store.items.map(\.id), [newest, middle])
     }
 
     func testRejectsInvalidPNGAndMismatchedDimensions() {

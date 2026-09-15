@@ -37,7 +37,7 @@ Starting a drag creates a PNG in a private subdirectory of the user's temporary 
 
 Temporary exports are limited to 50 files and 256 MiB. If active or recent transfers still occupy that space, a new drag is declined with an explanation. Copying and explicit saving remain available. An export file is not deleted immediately after dropping or deleting its card, because the receiving app may still need to read it.
 
-When the stack is full, the oldest unpinned images are removed first. Pins prevent expiry and automatic removal. If pinned images occupy all available space, a new capture is declined with an explanation. Manual deletion and quitting also discard pinned images. Unpinning restores the original capture-based expiry time.
+When the stack is full, the oldest unpinned images are removed first. Pins prevent expiry and automatic removal. If pinned images occupy all available space, a new capture is declined with an explanation. Manual deletion and quitting also discard pinned images. Unpinning restores the original capture-based expiry time; an unpinned image is not removed right away, but it is the first candidate when the next capture needs space.
 
 The 256 MiB limit applies to PNG data, not total process memory: thumbnails, capture operations, and open full-size previews need additional memory. macOS may swap memory to disk. Images copied, saved, or transferred to another app follow that destination's retention rules; SnapPile cannot remove those copies.
 
