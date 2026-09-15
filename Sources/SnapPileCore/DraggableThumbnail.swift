@@ -68,7 +68,9 @@ public struct DraggableThumbnail: NSViewRepresentable {
             endedAt screenPoint: NSPoint,
             operation: NSDragOperation
         ) {
-            if let activeFile { TemporaryScreenshotFiles.shared.finishDrag(activeFile) }
+            if let activeFile {
+                TemporaryScreenshotFiles.shared.finishDrag(activeFile, pasteboard: session.draggingPasteboard)
+            }
             activeFile = nil
             activeItem = nil
         }

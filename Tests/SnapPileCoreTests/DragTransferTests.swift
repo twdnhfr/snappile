@@ -165,6 +165,52 @@ final class DragTransferTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
     }
 
+    func testCleanupUsesSessionLockInsteadOfReusedPID() throws {
+        let base = directory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let running = TemporaryScreenshotFiles(baseDirectory: base)
+        let runningFile = try running.beginDrag(for: item())
+        // A crashed session whose PID now belongs to a live process: this one.
+        let abandoned = base.appendingPathComponent("\(getpid())-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: abandoned, withIntermediateDirectories: false)
+        try Data().write(to: abandoned.appendingPathComponent(".lock"))
+
+        TemporaryScreenshotFiles(baseDirectory: base).removeExpired()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: abandoned.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: runningFile.url.path))
+
+        running.removeAll()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: runningFile.url.deletingLastPathComponent().path))
+    }
+
+    func testExpiringExportReleasesItsUnchangedDragPasteboard() throws {
+        let base = directory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        var date = Date(timeIntervalSince1970: 1_000)
+        let cache = TemporaryScreenshotFiles(baseDirectory: base, retention: 30, now: { date })
+        let pasteboard = NSPasteboard.withUniqueName()
+        defer { pasteboard.releaseGlobally() }
+
+        let source = item()
+        let file = try cache.beginDrag(for: source)
+        pasteboard.clearContents()
+        pasteboard.writeObjects([ScreenshotDragPasteboard.item(pngData: source.pngData, fileURL: file.url)])
+        cache.finishDrag(file, pasteboard: pasteboard)
+        date.addTimeInterval(30)
+        cache.removeExpired()
+        XCTAssertNil(pasteboard.data(forType: .png))
+
+        // A later drag from another app owns the pasteboard now and must survive.
+        let other = try cache.beginDrag(for: source)
+        pasteboard.clearContents()
+        pasteboard.writeObjects([ScreenshotDragPasteboard.item(pngData: source.pngData, fileURL: other.url)])
+        cache.finishDrag(other, pasteboard: pasteboard)
+        pasteboard.clearContents()
+        pasteboard.setString("foreign drag", forType: .string)
+        cache.removeAll()
+        XCTAssertEqual(pasteboard.string(forType: .string), "foreign drag")
+    }
+
     func testSymlinkBaseIsRejectedWithoutWritingIntoDestination() throws {
         let base = directory()
         let destination = directory()

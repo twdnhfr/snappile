@@ -42,6 +42,9 @@ public final class TemporaryScreenshotFiles {
     private let now: () -> Date
     private var entries: [UUID: Entry] = [:]
     private var checkedStaleSessions = false
+    private var dragPasteboard: (itemID: UUID, pasteboard: NSPasteboard, changeCount: Int)?
+    // Only mutated on the main actor; unsafe so that deinit can close it.
+    nonisolated(unsafe) private var sessionLock: Int32 = -1
     private let files = FileManager.default
 
     public init(
@@ -61,6 +64,10 @@ public final class TemporaryScreenshotFiles {
         self.byteLimit = byteLimit
         self.fileLimit = fileLimit
         self.now = now
+    }
+
+    deinit {
+        if sessionLock >= 0 { close(sessionLock) }
     }
 
     public func beginDrag(for item: ScreenshotItem) throws -> ScreenshotDragFile {
@@ -84,6 +91,7 @@ public final class TemporaryScreenshotFiles {
         do {
             try createPrivateDirectory(baseDirectory)
             try createPrivateDirectory(sessionDirectory)
+            try lockSession()
             try createPrivateDirectory(directory)
             try item.pngData.write(to: url, options: .atomic)
             try files.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
@@ -97,7 +105,9 @@ public final class TemporaryScreenshotFiles {
         return ScreenshotDragFile(url: url, itemID: item.id, leaseID: leaseID)
     }
 
-    public func finishDrag(_ file: ScreenshotDragFile) {
+    /// Pass the session's pasteboard so its copy of the PNG is released together with the export.
+    public func finishDrag(_ file: ScreenshotDragFile, pasteboard: NSPasteboard? = nil) {
+        if let pasteboard { dragPasteboard = (file.itemID, pasteboard, pasteboard.changeCount) }
         guard var entry = entries[file.itemID], entry.activeLeases.remove(file.leaseID) != nil else { return }
         entry.expiresAt = now().addingTimeInterval(retention)
         entries[file.itemID] = entry
@@ -116,7 +126,11 @@ public final class TemporaryScreenshotFiles {
 
     public func removeAll() {
         for id in Array(entries.keys) { removeEntry(id) }
-        if entries.isEmpty { try? files.removeItem(at: sessionDirectory) }
+        if entries.isEmpty {
+            try? files.removeItem(at: sessionDirectory)
+            if sessionLock >= 0 { close(sessionLock) }
+            sessionLock = -1
+        }
     }
 
     private func removeEntry(_ id: UUID) {
@@ -125,6 +139,11 @@ public final class TemporaryScreenshotFiles {
         do {
             if files.fileExists(atPath: directory.path) { try files.removeItem(at: directory) }
             entries.removeValue(forKey: id)
+            // Any app can read the drag pasteboard until the next drag replaces it.
+            if let drag = dragPasteboard, drag.itemID == id {
+                if drag.pasteboard.changeCount == drag.changeCount { drag.pasteboard.clearContents() }
+                dragPasteboard = nil
+            }
         } catch {
             // Retain the entry and its byte budget so the next cleanup can retry.
         }
@@ -145,6 +164,28 @@ public final class TemporaryScreenshotFiles {
         try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url.path)
     }
 
+    /// Held for the session's lifetime. Unlike a PID, a lock cannot be taken over
+    /// by an unrelated process after a crash or reboot.
+    private func lockSession() throws {
+        guard sessionLock < 0 else { return }
+        let descriptor = open(
+            sessionDirectory.appendingPathComponent(".lock").path, O_RDWR | O_CREAT | O_NOFOLLOW, 0o600)
+        guard descriptor >= 0 else { throw ScreenshotDragError.preparationFailed }
+        guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
+            close(descriptor)
+            throw ScreenshotDragError.preparationFailed
+        }
+        sessionLock = descriptor
+    }
+
+    private func isAbandoned(_ directory: URL, pid: Int32) -> Bool {
+        let descriptor = open(directory.appendingPathComponent(".lock").path, O_RDONLY | O_NOFOLLOW)
+        // Directories from before session locks fall back to the owner's PID.
+        guard descriptor >= 0 else { return kill(pid, 0) == -1 && errno == ESRCH }
+        defer { close(descriptor) }
+        return flock(descriptor, LOCK_EX | LOCK_NB) == 0
+    }
+
     private func removeStaleSessions() {
         guard let attributes = try? files.attributesOfItem(atPath: baseDirectory.path),
             attributes[.type] as? FileAttributeType == .typeDirectory,
@@ -159,7 +200,7 @@ public final class TemporaryScreenshotFiles {
                 info[.type] as? FileAttributeType == .typeDirectory
             else { continue }
             // Never clean another running instance's export directory.
-            if kill(pid, 0) == -1 && errno == ESRCH { try? files.removeItem(at: directory) }
+            if directory != sessionDirectory, isAbandoned(directory, pid: pid) { try? files.removeItem(at: directory) }
         }
     }
 }
