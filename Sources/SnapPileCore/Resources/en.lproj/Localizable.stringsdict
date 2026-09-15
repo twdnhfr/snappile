@@ -51,6 +51,22 @@
 			<string>After %ld minutes</string>
 		</dict>
 	</dict>
+	<key>Pins prevent expiration. Dragging creates a temporary PNG that is deleted after %ld minutes. Everything is discarded when you quit.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Pins prevent expiration. Dragging creates a temporary PNG that is deleted after %#@minutes@. Everything is discarded when you quit.</string>
+		<key>minutes</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>ld</string>
+			<key>one</key>
+			<string>%ld minute</string>
+			<key>other</key>
+			<string>%ld minutes</string>
+		</dict>
+	</dict>
 	<key>SnapPile, %ld screenshots</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

@@ -119,9 +119,9 @@ struct SettingsView: View {
                 Label(L10n.text("Just for the moment."), systemImage: "clock").font(
                     .system(size: 11, weight: .semibold))
                 Text(
-                    L10n.text(
-                        "Pins prevent expiration. Dragging creates a temporary PNG that is deleted after 30 minutes. Everything is discarded when you quit."
-                    )
+                    L10n.format(
+                        "Pins prevent expiration. Dragging creates a temporary PNG that is deleted after %ld minutes. Everything is discarded when you quit.",
+                        Int(TemporaryScreenshotFiles.defaultRetention / 60))
                 )
                 .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 26)

@@ -72,7 +72,6 @@
 "Pin" = "Pin";
 "Pinned" = "Pinned";
 "Pins can exceed the limit. Unpin items to free space." = "Pins can exceed the limit. Unpin items to free space.";
-"Pins prevent expiration. Dragging creates a temporary PNG that is deleted after 30 minutes. Everything is discarded when you quit." = "Pins prevent expiration. Dragging creates a temporary PNG that is deleted after 30 minutes. Everything is discarded when you quit.";
 "Quit" = "Quit";
 "Quit SnapPile" = "Quit SnapPile";
 "REQUIRED" = "REQUIRED";

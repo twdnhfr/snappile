@@ -26,6 +26,7 @@ public enum ScreenshotDragError: LocalizedError {
 @MainActor
 public final class TemporaryScreenshotFiles {
     public static let shared = TemporaryScreenshotFiles()
+    public static let defaultRetention: TimeInterval = 30 * 60
 
     private struct Entry {
         let url: URL
@@ -49,7 +50,7 @@ public final class TemporaryScreenshotFiles {
     private let files = FileManager.default
 
     public init(
-        baseDirectory: URL? = nil, retention: TimeInterval = 30 * 60,
+        baseDirectory: URL? = nil, retention: TimeInterval = defaultRetention,
         byteLimit: Int = 256 * 1024 * 1024, fileLimit: Int = 50,
         now: @escaping () -> Date = Date.init
     ) {
