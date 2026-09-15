@@ -30,6 +30,7 @@ public final class TemporaryScreenshotFiles {
     private struct Entry {
         let url: URL
         let byteCount: Int
+        let modifiedAt: Date?
         var expiresAt: Date
         var activeLeases: Set<UUID>
     }
@@ -73,7 +74,7 @@ public final class TemporaryScreenshotFiles {
     public func beginDrag(for item: ScreenshotItem) throws -> ScreenshotDragFile {
         removeExpired()
         let leaseID = UUID()
-        if var entry = entries[item.id], files.fileExists(atPath: entry.url.path) {
+        if var entry = entries[item.id], isUnchanged(entry) {
             entry.activeLeases.insert(leaseID)
             entry.expiresAt = now().addingTimeInterval(retention)
             entries[item.id] = entry
@@ -94,13 +95,15 @@ public final class TemporaryScreenshotFiles {
             try lockSession()
             try createPrivateDirectory(directory)
             try item.pngData.write(to: url, options: .atomic)
-            try files.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            // Read-only, so receivers cannot edit the original that later drags reuse.
+            try files.setAttributes([.posixPermissions: 0o400], ofItemAtPath: url.path)
         } catch {
             try? files.removeItem(at: directory)
             throw ScreenshotDragError.preparationFailed
         }
         entries[item.id] = Entry(
             url: url, byteCount: item.pngData.count,
+            modifiedAt: (try? files.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date,
             expiresAt: now().addingTimeInterval(retention), activeLeases: [leaseID])
         return ScreenshotDragFile(url: url, itemID: item.id, leaseID: leaseID)
     }
@@ -147,6 +150,14 @@ public final class TemporaryScreenshotFiles {
         } catch {
             // Retain the entry and its byte budget so the next cleanup can retry.
         }
+    }
+
+    /// A receiver can still replace the file within the private directory; such a
+    /// file is rewritten from the original instead of being reused.
+    private func isUnchanged(_ entry: Entry) -> Bool {
+        guard let attributes = try? files.attributesOfItem(atPath: entry.url.path) else { return false }
+        return (attributes[.size] as? NSNumber)?.intValue == entry.byteCount
+            && attributes[.modificationDate] as? Date == entry.modifiedAt
     }
 
     private func createPrivateDirectory(_ url: URL) throws {

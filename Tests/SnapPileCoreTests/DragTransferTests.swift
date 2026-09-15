@@ -52,7 +52,7 @@ final class DragTransferTests: XCTestCase {
         let base = directory()
         defer { try? FileManager.default.removeItem(at: base) }
         let file = try TemporaryScreenshotFiles(baseDirectory: base).beginDrag(for: item())
-        for (url, permission) in [(file.url, 0o600), (file.url.deletingLastPathComponent(), 0o700), (base, 0o700)] {
+        for (url, permission) in [(file.url, 0o400), (file.url.deletingLastPathComponent(), 0o700), (base, 0o700)] {
             let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
             XCTAssertEqual((attrs[.posixPermissions] as? NSNumber)?.intValue, permission)
         }
@@ -99,6 +99,52 @@ final class DragTransferTests: XCTestCase {
         date.addTimeInterval(20)
         cache.removeExpired()
         XCTAssertTrue(FileManager.default.fileExists(atPath: third.url.path))
+    }
+
+    func testChangedOrMissingExportIsRewrittenFromOriginal() throws {
+        let base = directory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let source = item()
+        let cache = TemporaryScreenshotFiles(baseDirectory: base, byteLimit: source.pngData.count * 2)
+        let first = try cache.beginDrag(for: source)
+        cache.finishDrag(first)
+        // Replacing works despite the read-only file because the directory stays writable.
+        try Data("edited by receiver".utf8).write(to: first.url, options: .atomic)
+        let second = try cache.beginDrag(for: source)
+        XCTAssertEqual(second.url, first.url)
+        XCTAssertEqual(try Data(contentsOf: second.url), source.pngData)
+        cache.finishDrag(second)
+
+        try FileManager.default.removeItem(at: second.url)
+        let third = try cache.beginDrag(for: source)
+        XCTAssertEqual(try Data(contentsOf: third.url), source.pngData)
+        cache.finishDrag(third)
+        // The recreated entry must not count its bytes twice.
+        cache.finishDrag(try cache.beginDrag(for: item()))
+        XCTAssertThrowsError(try cache.beginDrag(for: item()))
+    }
+
+    func testFileLimitDeclinesNewExportsButKeepsReusingExisting() throws {
+        let base = directory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let cache = TemporaryScreenshotFiles(baseDirectory: base, fileLimit: 2)
+        let first = item()
+        cache.finishDrag(try cache.beginDrag(for: first))
+        cache.finishDrag(try cache.beginDrag(for: item()))
+        XCTAssertThrowsError(try cache.beginDrag(for: item())) { error in
+            XCTAssertEqual(error as? ScreenshotDragError, .capacityExceeded)
+        }
+        XCTAssertNoThrow(cache.finishDrag(try cache.beginDrag(for: first)))
+    }
+
+    func testRemoveAllDeletesExportsEvenWithActiveDrag() throws {
+        let base = directory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let cache = TemporaryScreenshotFiles(baseDirectory: base)
+        let file = try cache.beginDrag(for: item())
+        cache.removeAll()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.url.deletingLastPathComponent().path))
+        cache.finishDrag(file)  // A late drag completion after quit cleanup must be harmless.
     }
 
     func testSameTimestampHasDistinctURLsAndCleanupIsScoped() throws {
