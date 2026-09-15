@@ -2,15 +2,11 @@
 /* Keep keys stable and preserve format placeholders when adding translations. */
 
 "%ld / %ld" = "%ld / %ld";
-"%ld Screenshots" = "%ld Screenshots";
-"%ld images" = "%ld images";
 "%ld min. left" = "%ld min. left";
 "%ld × %ld" = "%ld × %ld";
 "%ld × %ld · %@" = "%ld × %ld · %@";
 "%ld × %ld · %@ · Click for Preview" = "%ld × %ld · %@ · Click for Preview";
-"1 image" = "1 image";
 "Active" = "Active";
-"After %ld minutes" = "After %ld minutes";
 "All set. You can take your first capture." = "All set. You can take your first capture.";
 "Allow Input Monitoring…" = "Allow Input Monitoring…";
 "Allow Screen Access first" = "Allow Screen Access first";
@@ -111,8 +107,6 @@
 "SnapPile · Pile" = "SnapPile · Pile";
 "SnapPile · Preview" = "SnapPile · Preview";
 "SnapPile · temporary screenshot pile" = "SnapPile · temporary screenshot pile";
-"SnapPile, %ld screenshots" = "SnapPile, %ld screenshots";
-"SnapPile, 1 screenshot" = "SnapPile, 1 screenshot";
 "Start First Capture" = "Start First Capture";
 "Starts area selection" = "Starts area selection";
 "Synthetic demo · no real screen data" = "Synthetic demo · no real screen data";

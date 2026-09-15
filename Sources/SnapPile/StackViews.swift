@@ -60,8 +60,8 @@ struct StackView: View {
                 Text(L10n.text("SnapPile")).font(.system(size: 11, weight: .semibold))
                 Button(action: model.toggleExpanded) {
                     Text(
-                        model.isExpanded || store.items.count < 2
-                            ? "\(store.items.count)" : "\(model.stackPosition) / \(store.items.count)"
+                        verbatim: model.isExpanded || store.items.count < 2
+                            ? "\(store.items.count)" : L10n.format("%ld / %ld", model.stackPosition, store.items.count)
                     )
                     .font(.system(size: 9, weight: .semibold, design: .rounded)).monospacedDigit()
                     .padding(.horizontal, 4).padding(.vertical, 3)
@@ -73,7 +73,7 @@ struct StackView: View {
                 )
                 .accessibilityLabel(
                     model.isExpanded
-                        ? (store.items.count == 1 ? L10n.text("1 image") : L10n.format("%ld images", store.items.count))
+                        ? L10n.format("%ld images", store.items.count)
                         : L10n.format("Image %ld of %ld", model.stackPosition, store.items.count))
                 Spacer(minLength: 2)
                 SmallIconButton(L10n.text("New Capture"), symbol: "plus", action: model.beginCapture)

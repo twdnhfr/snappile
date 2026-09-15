@@ -138,7 +138,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         item.button?.title = count > 0 ? " \(count)" : ""
         item.button?.font = .monospacedDigitSystemFont(ofSize: 11, weight: .medium)
         item.button?.setAccessibilityLabel(
-            count == 1 ? L10n.text("SnapPile, 1 screenshot") : L10n.format("SnapPile, %ld screenshots", count))
+            L10n.format("SnapPile, %ld screenshots", count))
         if popover.isShown { applyContentSize() }
     }
     func close() {

@@ -45,9 +45,9 @@ The 256 MiB limit applies to PNG data, not total process memory: thumbnails, cap
 
 Starting with version 0.1.4, English is the app's base and fallback language. This includes menus, onboarding, settings, accessibility labels, capture hints, and errors. macOS selects from the translations shipped with an app; it does not automatically translate its interface. SnapPile currently includes English only, so it also falls back to English when the preferred system language is different.
 
-App and core strings use `L10n.text` and `L10n.format`, backed by `Sources/SnapPileCore/Resources/en.lproj/Localizable.strings`. Complete sentences use format placeholders rather than string fragments, allowing translations to reorder their arguments. Permission descriptions live in `Support/en.lproj/InfoPlist.strings`.
+App and core strings use `L10n.text` and `L10n.format`, backed by `Sources/SnapPileCore/Resources/en.lproj/Localizable.strings` and, for count-dependent plural forms, `Localizable.stringsdict`. A test checks that the keys used in the sources and the catalog match. Complete sentences use format placeholders rather than string fragments, allowing translations to reorder their arguments. Permission descriptions live in `Support/en.lproj/InfoPlist.strings`.
 
-To add a language, provide a matching `.lproj/Localizable.strings` under the core resources and an `.lproj/InfoPlist.strings` under `Support`, then add its language code to `CFBundleLocalizations` in `Support/Info.plist`. Keep localization keys and format placeholder types intact. The build packages both resource bundles and the permission strings; it does not require the source checkout at runtime. Keep `defaultLocalization` and `CFBundleDevelopmentRegion` set to `en` for fallback.
+To add a language, provide a matching `.lproj/Localizable.strings` and `.lproj/Localizable.stringsdict` under the core resources and an `.lproj/InfoPlist.strings` under `Support`, then add its language code to `CFBundleLocalizations` in `Support/Info.plist`. Keep localization keys and format placeholder types intact. The build packages both resource bundles and the permission strings; it does not require the source checkout at runtime. Keep `defaultLocalization` and `CFBundleDevelopmentRegion` set to `en` for fallback.
 
 ## Development
 
