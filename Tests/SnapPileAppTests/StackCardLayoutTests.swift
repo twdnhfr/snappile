@@ -60,7 +60,7 @@ final class StackCardLayoutTests: XCTestCase {
         }
     }
 
-    func testNativeStackKeepsBothCardsWithinSmallAndTallViewports() throws {
+    func testNativeStackFrontCardFitsViewportsAndBackCardTakesOver() throws {
         _ = NSApplication.shared
         let model = AppController()
         defer { model.store.removeAll(includingPinned: true) }
@@ -72,7 +72,7 @@ final class StackCardLayoutTests: XCTestCase {
         ]
         for (name, width, height, heightLimit) in cases {
             model.store.removeAll(includingPinned: true)
-            _ = try model.store.add(
+            let backID = try model.store.add(
                 pngData: syntheticPNG(width: 64, height: 64), pixelWidth: 64, pixelHeight: 64,
                 createdAt: Date(timeIntervalSince1970: 1))
             let frontID = try model.store.add(
@@ -118,12 +118,16 @@ final class StackCardLayoutTests: XCTestCase {
                 CGSize(
                     width: StackLayout.width,
                     height: StackLayout.height(itemCount: model.store.items.count, expanded: false)))
-            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.35))
-            host.layoutSubtreeIfNeeded()
-            let switchedThumbnail = try XCTUnwrap(findThumbnailViews(in: host).first)
-            XCTAssertEqual(
-                switchedThumbnail.bounds.width / switchedThumbnail.bounds.height, 1, accuracy: 0.02,
-                "After deleting the front card, the square card takes over correctly in the same host")
+            // The card label names its screenshot, so it identifies which item is shown.
+            let backLabel = L10n.format("Screenshot %@", try XCTUnwrap(model.store.item(id: backID)).suggestedFilename)
+            let deadline = Date(timeIntervalSinceNow: 2)
+            var labels: [String] = []
+            repeat {
+                RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+                host.layoutSubtreeIfNeeded()
+                labels = findThumbnailViews(in: host).compactMap { $0.accessibilityLabel() }
+            } while labels != [backLabel] && Date() < deadline
+            XCTAssertEqual(labels, [backLabel], "After deleting the front card, the back card takes over in \(name)")
         }
     }
 
