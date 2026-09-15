@@ -313,6 +313,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                     self.notify(L10n.text("In the pile · ready to drag"))
                 } catch {
                     self.notify(error.localizedDescription, error: true)
+                    // Restore first so an already open Settings window keeps its state.
+                    self.restoreWindows(hiddenWindows)
                     if self.store.items.isEmpty { self.showSettings() }
                 }
                 self.isCapturing = false
@@ -369,7 +371,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         statusController?.close()
         refreshPermissions()
         if onboardingWindow == nil {
-            let height = min(740, (NSScreen.main?.visibleFrame.height ?? 800) - 60)
+            let height = min(740, (Self.activeScreen?.visibleFrame.height ?? 800) - 60)
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 560, height: height), styleMask: [.titled, .closable],
                 backing: .buffered, defer: false)
@@ -377,7 +379,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentView = NSHostingView(rootView: OnboardingView(model: self))
-            window.center()
+            Self.center(window)
             onboardingWindow = window
         }
         settingsWindow?.orderOut(nil)
@@ -409,9 +411,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                 styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
             window.title = "SnapPile"
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView(model: self))
-            window.center()
+            Self.center(window)
             settingsWindow = window
+        }
+        if settingsWindow?.isVisible != true && settingsWindow?.isMiniaturized != true {
+            // Start from the active shortcut: an unapplied or rejected draft must not survive closing the window.
+            registerShortcut()
+            settingsWindow?.contentView = NSHostingView(rootView: SettingsView(model: self))
         }
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
@@ -427,7 +433,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         window.delegate = self
         window.minSize = NSSize(width: 480, height: 360)
         window.contentView = NSHostingView(rootView: PreviewView(model: self, itemID: id))
-        window.center()
+        Self.center(window)
         previewWindow = window
         previewID = id
         NSApp.activate(ignoringOtherApps: true)
@@ -443,6 +449,20 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         window.contentView = nil
         previewWindow = nil
         previewID = nil
+    }
+    /// The display under the pointer, where the user just clicked the menu or pile.
+    private static var activeScreen: NSScreen? {
+        let pointer = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? NSScreen.main
+    }
+    /// Like NSWindow.center(), which always picks the window's current screen.
+    private static func center(_ window: NSWindow) {
+        guard let visible = activeScreen?.visibleFrame else { return window.center() }
+        let size = window.frame.size
+        window.setFrameOrigin(
+            CGPoint(
+                x: (visible.midX - size.width / 2).rounded(),
+                y: (visible.minY + max(0, visible.height - size.height) * 2 / 3).rounded()))
     }
     private func closePreview() {
         let window = previewWindow
