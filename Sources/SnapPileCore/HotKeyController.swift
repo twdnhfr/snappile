@@ -37,6 +37,10 @@ public final class HotKeyController {
     public func register(keyCode: UInt32, modifiers: UInt32) throws {
         guard eventHandler != nil else { throw HotKeyError.registrationFailed(OSStatus(eventNotHandledErr)) }
         if registeredKeyCode == keyCode, registeredModifiers == modifiers, hotKey != nil { return }
+        // RegisterEventHotKey accepts these, but macOS consumes them before any app sees them.
+        if Self.isSystemShortcut(keyCode: keyCode, modifiers: modifiers, in: Self.systemShortcuts()) {
+            throw HotKeyError.systemShortcut
+        }
         var candidate: EventHotKeyRef?
         let id = EventHotKeyID(signature: OSType(0x5350_4B59), id: nextID)
         let status = RegisterEventHotKey(keyCode, modifiers, id, GetApplicationEventTarget(), 0, &candidate)
@@ -140,12 +144,33 @@ public final class HotKeyController {
     }
 }
 
+extension HotKeyController {
+    static func isSystemShortcut(keyCode: UInt32, modifiers: UInt32, in shortcuts: [[String: Any]]) -> Bool {
+        let relevant = UInt32(cmdKey | shiftKey | optionKey | controlKey)
+        return shortcuts.contains { shortcut in
+            (shortcut[kHISymbolicHotKeyEnabled] as? NSNumber)?.boolValue == true
+                && (shortcut[kHISymbolicHotKeyCode] as? NSNumber)?.uint32Value == keyCode
+                && ((shortcut[kHISymbolicHotKeyModifiers] as? NSNumber)?.uint32Value ?? 0) & relevant
+                    == modifiers & relevant
+        }
+    }
+
+    static func systemShortcuts() -> [[String: Any]] {
+        var shortcuts: Unmanaged<CFArray>?
+        guard CopySymbolicHotKeys(&shortcuts) == noErr else { return [] }
+        return shortcuts?.takeRetainedValue() as? [[String: Any]] ?? []
+    }
+}
+
 public enum HotKeyError: LocalizedError, Equatable {
     case registrationFailed(OSStatus)
+    case systemShortcut
     public var errorDescription: String? {
         switch self {
         case .registrationFailed(let status):
             return L10n.format("The keyboard shortcut could not be registered (OSStatus %d).", status)
+        case .systemShortcut:
+            return L10n.text("This shortcut is already used by macOS.")
         }
     }
 }

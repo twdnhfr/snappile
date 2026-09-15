@@ -24,7 +24,7 @@ Download the notarized DMG from [Releases](https://github.com/twdnhfr/snappile/r
 - Copy the original PNG, save it as a PNG file, pin it, or delete it.
 - Browse the collapsed stack with a trackpad or mouse wheel, horizontally or vertically. The counter shows the current position, and browsing wraps after the last image. Each trackpad gesture moves by at most one image; momentum is ignored. The expanded list scrolls normally. New captures appear first; browsing does not change their order or lifetime.
 - Drag and drop using an existing temporary PNG file, with the original PNG data as an alternative representation of the same item. This also supports apps that expect a traditional file drop.
-- Configure the fallback shortcut using letters, numbers, or function keys with Command, Control, Option, and/or Shift. Conflicts are shown, and the previous shortcut stays active if a change fails.
+- Configure the fallback shortcut using letters, numbers, or function keys with Command, Control, Option, and/or Shift. Shortcuts already taken by enabled macOS system shortcuts or rejected by macOS are reported, and the previous shortcut stays active if a change fails.
 - Retention: 5, 15, 30, 60, or 120 minutes; 30 minutes by default. Expiry is checked every five seconds and after wake.
 - Stack limit: 5, 10, 20, or 50 images; 20 by default. Compressed PNG data in the stack is also limited to 256 MiB.
 - Choose the left or right edge. New captures place the stack on the display used for the capture.

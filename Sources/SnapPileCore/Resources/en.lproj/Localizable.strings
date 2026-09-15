@@ -132,6 +132,7 @@
 "The selected display is unavailable." = "The selected display is unavailable.";
 "The specified image dimensions are invalid or do not match the PNG." = "The specified image dimensions are invalid or do not match the PNG.";
 "This image is no longer in the pile." = "This image is no longer in the pile.";
+"This shortcut is already used by macOS." = "This shortcut is already used by macOS.";
 "Unpin" = "Unpin";
 "Welcome to SnapPile" = "Welcome to SnapPile";
 "Window" = "Window";
