@@ -58,6 +58,7 @@ final class StackPanelController {
             return nil
         }
     }
+    var isVisible: Bool { panel.isVisible }
     func setScreen(displayID: CGDirectDisplayID) { self.displayID = displayID }
     func show() {
         reposition()

@@ -274,15 +274,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         isCapturing = true
         let generation = UUID()
         captureGeneration = generation
+        let stackWasVisible = stackController?.isVisible == true
+        let hiddenWindows = [settingsWindow, onboardingWindow, previewWindow].compactMap { $0 }.filter(\.isVisible)
         stackController?.hide()
-        settingsWindow?.orderOut(nil)
-        onboardingWindow?.orderOut(nil)
-        previewWindow?.orderOut(nil)
+        for window in hiddenWindows { window.orderOut(nil) }
         selection.begin { [weak self] result in
             guard let self, !self.isTerminating, self.captureGeneration == generation else { return }
             guard let result else {
                 self.isCapturing = false
-                self.showStack()
+                self.restoreWindows(hiddenWindows)
+                if stackWasVisible { self.showStack() }
                 return
             }
             self.captureTask = Task { @MainActor [weak self] in
@@ -300,8 +301,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                     if self.store.items.isEmpty { self.showSettings() }
                 }
                 self.isCapturing = false
+                self.restoreWindows(hiddenWindows)
                 self.showStack()
             }
+        }
+    }
+    private func restoreWindows(_ windows: [NSWindow]) {
+        // A window may have been closed meanwhile, e.g. a preview whose item expired.
+        let current = [settingsWindow, onboardingWindow, previewWindow]
+        for window in windows where current.contains(where: { $0 === window }) {
+            window.orderFront(nil)
         }
     }
 
