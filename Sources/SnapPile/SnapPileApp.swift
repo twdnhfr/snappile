@@ -35,6 +35,15 @@ enum SnapPileMain {
         let editItem = NSMenuItem(title: L10n.text("Edit"), action: nil, keyEquivalent: "")
         editItem.submenu = editMenu
         mainMenu.addItem(editItem)
+        // NSWindow handles ⌘W and ⌘M only through menu items.
+        let windowMenu = NSMenu(title: L10n.text("Window"))
+        windowMenu.addItem(
+            withTitle: L10n.text("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowMenu.addItem(
+            withTitle: L10n.text("Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let windowItem = NSMenuItem(title: L10n.text("Window"), action: nil, keyEquivalent: "")
+        windowItem.submenu = windowMenu
+        mainMenu.addItem(windowItem)
         app.mainMenu = mainMenu
         app.run()
         withExtendedLifetime(delegate) {}

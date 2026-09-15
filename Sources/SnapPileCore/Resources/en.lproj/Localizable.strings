@@ -28,6 +28,7 @@
 "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud." = "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud.";
 "Check permission status again" = "Check permission status again";
 "Choose at least ⌘, ⌃, or ⌥." = "Choose at least ⌘, ⌃, or ⌥.";
+"Close" = "Close";
 "Collect" = "Collect";
 "Context for your agent." = "Context for your agent.";
 "Copy" = "Copy";
@@ -64,6 +65,7 @@
 "Left" = "Left";
 "Left + right Option keys" = "Left + right Option keys";
 "Maximum in Pile" = "Maximum in Pile";
+"Minimize" = "Minimize";
 "Modifier %@" = "Modifier %@";
 "New Capture" = "New Capture";
 "OPTIONAL" = "OPTIONAL";
@@ -132,5 +134,6 @@
 "This image is no longer in the pile." = "This image is no longer in the pile.";
 "Unpin" = "Unpin";
 "Welcome to SnapPile" = "Welcome to SnapPile";
+"Window" = "Window";
 "You choose the area for each capture. SnapPile keeps it temporarily in your pile." = "You choose the area for each capture. SnapPile keeps it temporarily in your pile.";
 "Your Pile" = "Your Pile";

@@ -158,7 +158,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     @objc private func toggle(_ sender: Any?) {
-        if NSApp.currentEvent?.type == .rightMouseUp {
+        let event = NSApp.currentEvent
+        if event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true {
             let menu = NSMenu()
             menu.addItem(makeMenuItem(L10n.text("Capture Area"), #selector(capture)))
             menu.addItem(makeMenuItem(L10n.text("Show Pile"), #selector(showStack)))
