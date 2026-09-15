@@ -51,7 +51,7 @@ To add a language, provide a matching `.lproj/Localizable.strings` and `.lproj/L
 
 ## Development
 
-Requires macOS 14 or later and Swift 5.10 or later (Xcode 15.3). No third-party dependencies.
+Requires macOS 14 or later and Xcode 16 (Swift 6) or later, which includes the `swift format` command used below. CI builds with the current Xcode on GitHub's `macos-latest` runner; older toolchains are not tested, even though `Package.swift` declares tools version 5.10. No third-party dependencies.
 
 ```sh
 swift test
