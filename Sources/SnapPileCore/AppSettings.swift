@@ -26,6 +26,15 @@ public final class AppSettings: ObservableObject {
     @Published public var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
+    /// macOS shows its consent prompt only for the first request of each permission.
+    public var hasRequestedScreenPermission: Bool {
+        get { defaults.bool(forKey: "hasRequestedScreenPermission") }
+        set { defaults.set(newValue, forKey: "hasRequestedScreenPermission") }
+    }
+    public var hasRequestedInputPermission: Bool {
+        get { defaults.bool(forKey: "hasRequestedInputPermission") }
+        set { defaults.set(newValue, forKey: "hasRequestedInputPermission") }
+    }
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

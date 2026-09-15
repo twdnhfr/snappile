@@ -228,15 +228,21 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
     @objc private func willSleep() { selection.cancel() }
 
+    // The first request returns immediately while macOS shows its own prompt, so
+    // System Settings opens only on later requests instead of covering that prompt.
     func requestScreenPermission() {
+        let promptShown = settings.hasRequestedScreenPermission
+        settings.hasRequestedScreenPermission = true
         _ = captureService.requestPermission()
         refreshPermissions()
-        if !screenPermission { openPrivacy("Privacy_ScreenCapture") }
+        if !screenPermission && promptShown { openPrivacy("Privacy_ScreenCapture") }
     }
     func requestInputPermission() {
+        let promptShown = settings.hasRequestedInputPermission
+        settings.hasRequestedInputPermission = true
         hotKeys?.requestInputMonitoringPermission()
         refreshPermissions()
-        if !inputPermission { openPrivacy("Privacy_ListenEvent") }
+        if !inputPermission && promptShown { openPrivacy("Privacy_ListenEvent") }
     }
     private func openPrivacy(_ pane: String) {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)") {
