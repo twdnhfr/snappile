@@ -114,17 +114,19 @@ public final class ScreenCaptureService {
         let width = image.width
         let height = image.height
         let data = try await Task.detached(priority: .userInitiated) {
-            try Self.encodePNG(image)
+            try Self.encodePNG(image, scale: scale)
         }.value
         return CapturedImage(pngData: data, pixelWidth: width, pixelHeight: height)
     }
 
-    private nonisolated static func encodePNG(_ image: CGImage) throws -> Data {
+    /// Records the display scale as DPI so receivers place Retina captures at their on-screen size.
+    nonisolated static func encodePNG(_ image: CGImage, scale: CGFloat) throws -> Data {
         let data = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else {
             throw ScreenCaptureError.pngEncodingFailed
         }
-        CGImageDestinationAddImage(destination, image, nil)
+        let properties = [kCGImagePropertyDPIWidth: 72 * scale, kCGImagePropertyDPIHeight: 72 * scale]
+        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw ScreenCaptureError.pngEncodingFailed }
         return data as Data
     }

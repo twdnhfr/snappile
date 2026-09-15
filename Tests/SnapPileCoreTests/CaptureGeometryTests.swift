@@ -1,4 +1,5 @@
 import CoreGraphics
+import ImageIO
 import XCTest
 
 @testable import SnapPileCore
@@ -50,6 +51,20 @@ final class CaptureGeometryTests: XCTestCase {
         let output = CaptureGeometry.outputPixelSize(for: selection, scale: 2)
         XCTAssertEqual(output.width, 203)
         XCTAssertEqual(output.height, 102)
+    }
+
+    func testPNGRecordsDisplayScaleAsDPI() throws {
+        let context = try XCTUnwrap(
+            CGContext(
+                data: nil, width: 4, height: 4, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let image = try XCTUnwrap(context.makeImage())
+
+        let data = try ScreenCaptureService.encodePNG(image, scale: 2)
+        let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+        let properties = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+        XCTAssertEqual((properties[kCGImagePropertyDPIWidth] as? NSNumber)?.doubleValue ?? 0, 144, accuracy: 0.5)
+        XCTAssertEqual((properties[kCGImagePropertyDPIHeight] as? NSNumber)?.doubleValue ?? 0, 144, accuracy: 0.5)
     }
 
     func testOutputPixelSizeClampsInvalidNonPositiveRect() {
