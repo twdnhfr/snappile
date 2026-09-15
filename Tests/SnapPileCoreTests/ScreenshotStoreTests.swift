@@ -49,6 +49,25 @@ final class ScreenshotStoreTests: XCTestCase {
         XCTAssertNil(store.item(id: pinned))
     }
 
+    func testRemovalsWithoutEffectDoNotPublish() throws {
+        var clock = Date(timeIntervalSince1970: 1000)
+        let store = ScreenshotStore(expiryMinutes: 1, now: { clock })
+        let id = try store.add(pngData: png(), pixelWidth: 10, pixelHeight: 10, createdAt: clock)
+        var publishes = 0
+        let subscription = store.$items.dropFirst().sink { _ in publishes += 1 }
+        defer { subscription.cancel() }
+
+        store.removeExpired()
+        store.remove(id: UUID())
+        store.enforceLimits()
+        XCTAssertEqual(publishes, 0)
+
+        clock.addTimeInterval(61)
+        store.removeExpired()
+        XCTAssertEqual(publishes, 1)
+        XCTAssertNil(store.item(id: id))
+    }
+
     func testExpiresAtExactDeadline() throws {
         let start = Date(timeIntervalSince1970: 1000)
         var clock = start

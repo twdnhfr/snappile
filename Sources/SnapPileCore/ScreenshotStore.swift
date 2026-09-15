@@ -136,14 +136,14 @@ public final class ScreenshotStore: ObservableObject {
     public func enforceLimits() {
         while items.count > max(1, maxItems) || totalBytes > byteLimit {
             guard let oldest = items.filter({ !$0.isPinned }).min(by: { $0.createdAt < $1.createdAt }) else { break }
-            items.removeAll { $0.id == oldest.id }
+            removeItems { $0.id == oldest.id }
         }
     }
 
-    public func remove(id: UUID) { items.removeAll { $0.id == id } }
+    public func remove(id: UUID) { removeItems { $0.id == id } }
 
     public func removeAll(includingPinned: Bool = false) {
-        if includingPinned { items.removeAll() } else { items.removeAll { !$0.isPinned } }
+        removeItems { includingPinned || !$0.isPinned }
     }
 
     public func togglePin(id: UUID) {
@@ -154,10 +154,17 @@ public final class ScreenshotStore: ObservableObject {
 
     public func removeExpired() {
         let current = now()
-        items.removeAll { item in
+        removeItems { item in
             guard !item.isPinned, let expiration = item.expirationDate(minutes: expiryMinutes) else { return false }
             return expiration <= current
         }
+    }
+
+    /// Assigns only on an actual removal: every write to `items` publishes and
+    /// refreshes the UI, and expiry runs every few seconds.
+    private func removeItems(where shouldRemove: (ScreenshotItem) -> Bool) {
+        let kept = items.filter { !shouldRemove($0) }
+        if kept.count != items.count { items = kept }
     }
 
     public func item(id: UUID) -> ScreenshotItem? { items.first { $0.id == id } }
