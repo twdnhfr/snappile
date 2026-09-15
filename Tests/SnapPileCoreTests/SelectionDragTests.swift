@@ -162,6 +162,61 @@ final class SelectionDragTests: XCTestCase {
     }
 
     @MainActor
+    func testSpaceReleasedOnAnotherDisplayDoesNotLeaveMoveModeBehind() throws {
+        _ = NSApplication.shared
+        let keyState = SelectionKeyState()
+        var pointer = CGPoint(x: 100, y: 100)
+        var results: [CaptureSelection?] = []
+        let first = SelectionOverlayView(screenFrame: bounds, keyState: keyState) { results.append($0) }
+        let second = SelectionOverlayView(
+            screenFrame: bounds.offsetBy(dx: bounds.width, dy: 0), keyState: keyState
+        ) { results.append($0) }
+        first.currentMousePoint = { pointer }
+        second.currentMousePoint = { pointer }
+
+        // Space goes to the first display's key window, the drag and key-up to the second.
+        first.keyDown(with: try key(.keyDown, code: 49))
+        second.mouseDown(with: try mouse(.leftMouseDown, at: pointer))
+        pointer = CGPoint(x: 140, y: 160)
+        second.mouseDragged(with: try mouse(.leftMouseDragged, at: pointer))
+        second.keyUp(with: try key(.keyUp, code: 49))
+        second.mouseUp(with: try mouse(.leftMouseUp, at: CGPoint(x: 220, y: 200)))
+        XCTAssertEqual(
+            try XCTUnwrap(results.last ?? nil).rect, CGRect(x: 940, y: 160, width: 80, height: 40))
+
+        first.mouseDown(with: try mouse(.leftMouseDown, at: CGPoint(x: 100, y: 100)))
+        first.mouseUp(with: try mouse(.leftMouseUp, at: CGPoint(x: 150, y: 160)))
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(try XCTUnwrap(results.last ?? nil).rect, CGRect(x: 100, y: 100, width: 50, height: 60))
+    }
+
+    @MainActor
+    func testSelectionEndsWhenAppResignsActiveOrScreensChange() throws {
+        _ = NSApplication.shared
+        let controller = RegionSelectionController()
+        var results: [CaptureSelection?] = []
+        controller.begin { results.append($0) }
+        // An unchanged display layout keeps the selection open.
+        NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: NSApp)
+        drainMainQueue()
+        XCTAssertTrue(results.isEmpty)
+
+        NotificationCenter.default.post(name: NSApplication.didResignActiveNotification, object: NSApp)
+        drainMainQueue()
+        XCTAssertEqual(results, [nil])
+
+        // Observers are gone once the session ended.
+        NotificationCenter.default.post(name: NSApplication.didResignActiveNotification, object: NSApp)
+        drainMainQueue()
+        XCTAssertEqual(results, [nil])
+    }
+
+    @MainActor
+    private func drainMainQueue() {
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+    }
+
+    @MainActor
     private func mouse(_ type: NSEvent.EventType, at point: CGPoint) throws -> NSEvent {
         try XCTUnwrap(
             NSEvent.mouseEvent(

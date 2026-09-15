@@ -7,6 +7,8 @@ public final class RegionSelectionController {
     private var finished = false
     private weak var previousApplication: NSRunningApplication?
     private var cursorWasPushed = false
+    private var observers: [NSObjectProtocol] = []
+    private var screenFrames: [CGRect] = []
 
     public init() {}
 
@@ -17,8 +19,11 @@ public final class RegionSelectionController {
         previousApplication = NSWorkspace.shared.frontmostApplication
         NSCursor.crosshair.push()
         cursorWasPushed = true
+        screenFrames = NSScreen.screens.map(\.frame)
+        // Key events reach only the key window, so Space state is shared across displays.
+        let keyState = SelectionKeyState()
         for screen in NSScreen.screens {
-            let view = SelectionOverlayView(screenFrame: screen.frame) { [weak self] result in
+            let view = SelectionOverlayView(screenFrame: screen.frame, keyState: keyState) { [weak self] result in
                 self?.finish(result)
             }
             let window = SelectionWindow(
@@ -37,6 +42,22 @@ public final class RegionSelectionController {
         }
         NSApp.activate(ignoringOtherApps: true)
         windows.first?.makeKey()
+        // Without key focus Esc no longer reaches the overlay, and stale screen
+        // frames would make the capture fail, so end the session instead.
+        let center = NotificationCenter.default
+        observers = [
+            center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) {
+                [weak self] _ in
+                Task { @MainActor in self?.cancel() }
+            },
+            center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main)
+            { [weak self] _ in
+                Task { @MainActor in
+                    guard let self, NSScreen.screens.map(\.frame) != self.screenFrames else { return }
+                    self.cancel()
+                }
+            },
+        ]
     }
 
     public func cancel() { finish(nil) }
@@ -44,6 +65,8 @@ public final class RegionSelectionController {
     private func finish(_ result: CaptureSelection?) {
         guard !finished else { return }
         finished = true
+        observers.forEach(NotificationCenter.default.removeObserver)
+        observers.removeAll()
         for window in windows {
             window.orderOut(nil)
             window.contentView = nil
@@ -66,15 +89,24 @@ private final class SelectionWindow: NSWindow {
     override var canBecomeMain: Bool { false }
 }
 
+final class SelectionKeyState {
+    var isSpaceHeld = false
+}
+
 final class SelectionOverlayView: NSView {
     private let screenFrame: CGRect
     private let displayID: CGDirectDisplayID
+    private let keyState: SelectionKeyState
     private let report: (CaptureSelection?) -> Void
     private var drag = SelectionDragState(bounds: .zero)
     var currentMousePoint: (() -> CGPoint)?
 
-    init(screenFrame: CGRect, report: @escaping (CaptureSelection?) -> Void) {
+    init(
+        screenFrame: CGRect, keyState: SelectionKeyState = SelectionKeyState(),
+        report: @escaping (CaptureSelection?) -> Void
+    ) {
         self.screenFrame = screenFrame
+        self.keyState = keyState
         self.displayID =
             (NSScreen.screens.first(where: { $0.frame == screenFrame })?.deviceDescription[
                 NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
@@ -85,6 +117,7 @@ final class SelectionOverlayView: NSView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var acceptsFirstResponder: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func resetCursorRects() { addCursorRect(bounds, cursor: .crosshair) }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -120,7 +153,10 @@ final class SelectionOverlayView: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeKey()
         window?.makeFirstResponder(self)
-        drag.begin(at: convert(event.locationInWindow, from: nil))
+        let point = convert(event.locationInWindow, from: nil)
+        // Space may have been pressed or released while another display's window was key.
+        drag.setMoving(keyState.isSpaceHeld, at: point)
+        drag.begin(at: point)
         needsDisplay = true
     }
     override func mouseDragged(with event: NSEvent) {
@@ -140,6 +176,7 @@ final class SelectionOverlayView: NSView {
         if event.keyCode == 53 {
             report(nil)
         } else if event.keyCode == 49 {
+            keyState.isSpaceHeld = true
             drag.setMoving(true, at: currentMousePoint?() ?? windowMousePoint())
             needsDisplay = true
         } else if event.keyCode == 36, drag.current.width >= 2, drag.current.height >= 2 {
@@ -153,6 +190,7 @@ final class SelectionOverlayView: NSView {
     }
     override func keyUp(with event: NSEvent) {
         if event.keyCode == 49 {
+            keyState.isSpaceHeld = false
             drag.setMoving(false, at: currentMousePoint?() ?? windowMousePoint())
             needsDisplay = true
         } else {
