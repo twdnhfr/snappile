@@ -115,7 +115,10 @@ if [[ "$MODE" == "production" ]]; then
     echo "Production requires a Developer ID Application signature." >&2
     exit 1
   fi
-  lipo "$APP_DIR/Contents/MacOS/SnapPile" -verify_arch arm64 x86_64
+  # Xcode 27's lipo treats a second architecture after -verify_arch as another input file.
+  for arch in arm64 x86_64; do
+    lipo "$APP_DIR/Contents/MacOS/SnapPile" -verify_arch "$arch"
+  done
   ditto -c -k --norsrc --noextattr --keepParent "$APP_DIR" "$STAGING_DIR/notarize.zip"
   echo "Submitting the app to Apple for notarization …"
   notarize "$STAGING_DIR/notarize.zip" "$OUTPUT_DIR/notarization-app.json"
