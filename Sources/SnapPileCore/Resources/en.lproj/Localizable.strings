@@ -3,6 +3,7 @@
 
 "%ld / %ld" = "%ld / %ld";
 "%ld min. left" = "%ld min. left";
+"%ld s left" = "%ld s left";
 "%ld × %ld" = "%ld × %ld";
 "%ld × %ld · %@" = "%ld × %ld · %@";
 "%ld × %ld · %@ · Click for Preview" = "%ld × %ld · %@ · Click for Preview";

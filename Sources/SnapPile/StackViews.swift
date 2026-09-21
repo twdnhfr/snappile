@@ -138,10 +138,12 @@ struct ScreenshotCard: View {
     let item: ScreenshotItem
     var maxCardHeight: CGFloat = StackLayout.maxCardHeight
     @State private var hovering = false
+    @State private var shakes: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let cardSize = StackLayout.cardSize(maxHeight: maxCardHeight)
+        let minutes = model.settings.expiryMinutes
         DraggableThumbnail(
             item: item, onClick: { model.preview(item.id) }, onDragError: { model.notify($0, error: true) },
             contentMode: .fill
@@ -160,21 +162,31 @@ struct ScreenshotCard: View {
                 .opacity(hovering ? 1 : 0.85).padding(6)
         }
         .overlay(alignment: .bottomLeading) {
-            if hovering {
-                TimelineView(.periodic(from: .now, by: 30)) { context in
+            TimelineView(ExpirySchedule(expiration: item.isPinned ? nil : item.expirationDate(minutes: minutes))) {
+                context in
+                let soon = isExpiringSoon(item, minutes: minutes, now: context.date)
+                let secondsLeft = Int(ceil(expiryRemaining(item, minutes: minutes, now: context.date) ?? 0))
+                if hovering || soon {
                     Text(
                         L10n.format(
                             "%ld × %ld · %@", item.pixelWidth, item.pixelHeight,
-                            lifetimeText(item, minutes: model.settings.expiryMinutes, now: context.date))
+                            lifetimeText(item, minutes: minutes, now: context.date))
                     )
-                    .font(.system(size: 9)).monospacedDigit()
+                    .font(.system(size: 9, weight: soon ? .semibold : .regular)).monospacedDigit()
+                    .foregroundStyle(soon ? Color.red : Color.primary)
                     .padding(.horizontal, 7).padding(.vertical, 4)
                     .background(.regularMaterial, in: Capsule())
-                }.padding(6).allowsHitTesting(false)
-            }
+                    .onChange(of: secondsLeft, initial: true) { _, seconds in
+                        // A short shake every ten seconds of the final minute, and once on entering it.
+                        guard soon, seconds > 0, !reduceMotion, seconds % 10 == 0 else { return }
+                        withAnimation(.easeInOut(duration: 0.5)) { shakes += 3 }
+                    }
+                }
+            }.padding(6).allowsHitTesting(false)
         }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.primary.opacity(0.10)))
+        .modifier(ShakeEffect(animatableData: shakes))
         .onHover { hovering = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
         .contextMenu {
@@ -250,8 +262,73 @@ struct SmallIconButton: View {
         .buttonStyle(.plain).foregroundStyle(tint).help(title).accessibilityLabel(title)
     }
 }
+/// Below this many seconds the remaining time counts down in seconds and turns red.
+let expiryWarningInterval: TimeInterval = 60
+
+/// Seconds until an unpinned item expires; nil for pinned items or when expiry is off.
+func expiryRemaining(_ item: ScreenshotItem, minutes: Int, now: Date = Date()) -> TimeInterval? {
+    guard !item.isPinned, let expiration = item.expirationDate(minutes: minutes) else { return nil }
+    return max(0, expiration.timeIntervalSince(now))
+}
+
+func isExpiringSoon(_ item: ScreenshotItem, minutes: Int, now: Date = Date()) -> Bool {
+    guard let remaining = expiryRemaining(item, minutes: minutes, now: now) else { return false }
+    return remaining <= expiryWarningInterval
+}
+
 func lifetimeText(_ item: ScreenshotItem, minutes: Int, now: Date = Date()) -> String {
     if item.isPinned { return L10n.text("Pinned") }
-    let remaining = max(0, Int(ceil((item.expirationDate(minutes: minutes)?.timeIntervalSince(now) ?? 0) / 60)))
-    return remaining > 0 ? L10n.format("%ld min. left", remaining) : L10n.text("Expiring")
+    let remaining = expiryRemaining(item, minutes: minutes, now: now) ?? 0
+    if remaining <= 0 { return L10n.text("Expiring") }
+    if remaining <= expiryWarningInterval { return L10n.format("%ld s left", Int(ceil(remaining))) }
+    return L10n.format("%ld min. left", Int(ceil(remaining / 60)))
+}
+
+/// Ticks every 30 s while minutes are shown and every second during the final minute.
+struct ExpirySchedule: TimelineSchedule {
+    let expiration: Date?
+
+    func entries(from start: Date, mode: Mode) -> Entries { Entries(upcoming: start, expiration: expiration) }
+
+    struct Entries: Sequence, IteratorProtocol {
+        var upcoming: Date
+        let expiration: Date?
+
+        mutating func next() -> Date? {
+            let current = upcoming
+            let warningStart = expiration?.addingTimeInterval(-expiryWarningInterval)
+            if let warningStart, current < warningStart {
+                upcoming = Swift.min(current.addingTimeInterval(30), warningStart)
+            } else if warningStart != nil {
+                upcoming = current.addingTimeInterval(1)
+            } else {
+                upcoming = current.addingTimeInterval(30)
+            }
+            return current
+        }
+    }
+}
+
+/// Remaining lifetime that updates live and turns red during the final minute.
+struct LifetimeLabel: View {
+    let item: ScreenshotItem
+    let minutes: Int
+    var font: Font = .system(size: 11)
+    var color: Color = .secondary
+
+    var body: some View {
+        TimelineView(ExpirySchedule(expiration: item.isPinned ? nil : item.expirationDate(minutes: minutes))) {
+            context in
+            Text(lifetimeText(item, minutes: minutes, now: context.date)).font(font).monospacedDigit()
+                .foregroundStyle(isExpiringSoon(item, minutes: minutes, now: context.date) ? Color.red : color)
+        }
+    }
+}
+
+/// Horizontal shake; each whole step of `animatableData` is one back-and-forth swing.
+struct ShakeEffect: GeometryEffect {
+    var animatableData: CGFloat
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: sin(animatableData * .pi * 2) * 4, y: 0))
+    }
 }

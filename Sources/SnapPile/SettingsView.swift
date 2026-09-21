@@ -225,8 +225,7 @@ struct MenuPopoverView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(L10n.format("%ld × %ld", item.pixelWidth, item.pixelHeight)).font(
                                 .system(size: 11, weight: .medium))
-                            Text(lifetimeText(item, minutes: settings.expiryMinutes)).font(.system(size: 10))
-                                .foregroundStyle(.secondary)
+                            LifetimeLabel(item: item, minutes: settings.expiryMinutes, font: .system(size: 10))
                         }
                         Spacer()
                         SmallIconButton(L10n.text("Copy"), symbol: "doc.on.doc") { model.copy(item.id) }

@@ -284,8 +284,7 @@ struct PreviewView: View {
                         .system(size: 12, weight: .medium)
                     )
                     .monospacedDigit()
-                    Text(lifetimeText(item, minutes: model.settings.expiryMinutes)).font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                    LifetimeLabel(item: item, minutes: model.settings.expiryMinutes)
                     Spacer()
                     Button {
                         model.copy(itemID)
