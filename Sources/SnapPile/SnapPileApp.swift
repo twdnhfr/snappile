@@ -7,6 +7,11 @@ import SwiftUI
 @main
 enum SnapPileMain {
     @MainActor static func main() {
+        // Coding agents launch the bundled executable as their MCP server.
+        if CommandLine.arguments.dropFirst().first == "mcp" {
+            MCPServer().run()
+            return
+        }
         let app = NSApplication.shared
         if let bundleID = Bundle.main.bundleIdentifier,
             let other = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
@@ -50,6 +55,12 @@ enum SnapPileMain {
     }
 }
 
+private enum CaptureOutcome {
+    case captured(UUID)
+    case cancelled
+    case failed(String)
+}
+
 @MainActor
 final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, ObservableObject {
     let settings = AppSettings()
@@ -65,6 +76,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @Published var inputPermission = false
     @Published var optionMonitoringIssue: String?
     @Published var shortcutError: String?
+    @Published var agentAccessError: String?
     private var subscriptions = Set<AnyCancellable>()
     private var expiryTimer: Timer?
     private var messageTask: Task<Void, Never>?
@@ -76,6 +88,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     private var previewWindow: NSWindow?
     private var previewID: UUID?
     private var hotKeys: HotKeyController?
+    private var agentServer: AgentSocketServer?
     private var isTerminating = false
     private var captureGeneration = UUID()
     private var previousStackIDs: [UUID] = []
@@ -140,6 +153,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         }.store(in: &subscriptions)
         settings.$side.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.stackController?.reposition() }
+        }.store(in: &subscriptions)
+        settings.$agentAccessEnabled.removeDuplicates().sink { [weak self] enabled in
+            self?.setAgentAccess(enabled)
         }.store(in: &subscriptions)
         settings.$doubleOptionEnabled.dropFirst().sink { [weak self] value in
             self?.hotKeys?.doubleOptionEnabled = value
@@ -206,6 +222,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         selection.cancel()
         expiryTimer?.invalidate()
         hotKeys?.stop()
+        agentServer?.stop()
         statusController?.shutdown()
         stackController?.shutdown()
         closePreview()
@@ -272,18 +289,30 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         }
     }
 
-    func beginCapture() {
-        guard !isCapturing, !isTerminating else { return }
+    func beginCapture() { startCapture(agentReason: nil, completion: nil) }
+
+    /// Reports exactly once whether the user captured an image, cancelled, or no capture could start.
+    private func startCapture(agentReason: String?, completion: ((CaptureOutcome) -> Void)?) {
+        guard !isCapturing else {
+            completion?(.failed(L10n.text("SnapPile is already capturing.")))
+            return
+        }
+        guard !isTerminating else {
+            completion?(.cancelled)
+            return
+        }
         statusController?.close()
         refreshPermissions()
         guard screenPermission else {
             showOnboarding()
             notify(L10n.text("Allow screen recording first."), error: true)
+            completion?(.failed(L10n.text("Allow screen recording first.")))
             return
         }
         if store.items.count >= settings.maxItems && store.items.allSatisfy(\.isPinned) {
             notify(L10n.text("The pile is full. Unpin or delete an image."), error: true)
             showStack()
+            completion?(.failed(L10n.text("The pile is full. Unpin or delete an image.")))
             return
         }
         isCapturing = true
@@ -293,25 +322,35 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let hiddenWindows = [settingsWindow, onboardingWindow, previewWindow].compactMap { $0 }.filter(\.isVisible)
         stackController?.hide()
         for window in hiddenWindows { window.orderOut(nil) }
-        selection.begin { [weak self] result in
-            guard let self, !self.isTerminating, self.captureGeneration == generation else { return }
+        selection.begin(agentReason: agentReason) { [weak self] result in
+            guard let self, !self.isTerminating, self.captureGeneration == generation else {
+                completion?(.cancelled)
+                return
+            }
             guard let result else {
                 self.isCapturing = false
                 self.restoreWindows(hiddenWindows)
                 if stackWasVisible { self.showStack() }
+                completion?(.cancelled)
                 return
             }
             self.captureTask = Task { @MainActor [weak self] in
                 guard let self else { return }
+                var outcome = CaptureOutcome.cancelled
+                defer { completion?(outcome) }
                 do {
                     let image = try await self.captureService.capture(selection: result)
                     guard !Task.isCancelled, !self.isTerminating, self.captureGeneration == generation else { return }
-                    _ = try self.store.add(
+                    let id = try self.store.add(
                         pngData: image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
+                    outcome = .captured(id)
                     self.stackController?.setScreen(displayID: result.displayID)
                     self.isExpanded = false
-                    self.notify(L10n.text("In the pile · ready to drag"))
+                    self.notify(
+                        agentReason == nil
+                            ? L10n.text("In the pile · ready to drag") : L10n.text("In the pile · sent to the agent"))
                 } catch {
+                    outcome = .failed(error.localizedDescription)
                     self.notify(error.localizedDescription, error: true)
                     // Restore first so an already open Settings window keeps its state.
                     self.restoreWindows(hiddenWindows)
@@ -322,6 +361,56 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                 self.showStack()
             }
         }
+    }
+
+    private func setAgentAccess(_ enabled: Bool) {
+        agentServer?.stop()
+        agentServer = nil
+        agentAccessError = nil
+        guard enabled, !isTerminating else { return }
+        let server = AgentSocketServer()
+        do {
+            try server.start { [weak self] request in
+                guard let self else { return .failure(AgentBridgeError.notRunning.localizedDescription) }
+                return await self.handleAgentRequest(request)
+            }
+            agentServer = server
+        } catch {
+            agentAccessError = error.localizedDescription
+        }
+    }
+
+    private func handleAgentRequest(_ request: AgentRequest) async -> AgentResponse {
+        switch request.command {
+        case .latest:
+            guard let item = store.items.first else { return .failure(L10n.text("The pile is empty.")) }
+            return .image(item.pngData, pixelWidth: item.pixelWidth, pixelHeight: item.pixelHeight)
+        case .capture:
+            let reason = String((request.reason ?? "").prefix(200))
+            let outcome = await withCheckedContinuation { continuation in
+                startCapture(agentReason: reason) { continuation.resume(returning: $0) }
+            }
+            switch outcome {
+            case .captured(let id):
+                guard let item = store.item(id: id) else {
+                    return .failure(L10n.text("This image is no longer in the pile."))
+                }
+                return .image(item.pngData, pixelWidth: item.pixelWidth, pixelHeight: item.pixelHeight)
+            case .cancelled: return .failure(L10n.text("The user cancelled the screenshot."))
+            case .failed(let message): return .failure(message)
+            }
+        }
+    }
+
+    /// Registers the bundled executable as a user-scoped MCP server in Claude Code.
+    var agentSetupCommand: String {
+        let path = Bundle.main.executablePath ?? "/Applications/SnapPile.app/Contents/MacOS/SnapPile"
+        return "claude mcp add --scope user snappile -- '\(path.replacingOccurrences(of: "'", with: "'\\''"))' mcp"
+    }
+    func copyAgentSetupCommand() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(agentSetupCommand, forType: .string)
+        notify(L10n.text("Setup command copied"))
     }
     private func restoreWindows(_ windows: [NSWindow]) {
         // A window may have been closed meanwhile, e.g. a preview whose item expired.

@@ -23,6 +23,10 @@ public final class AppSettings: ObservableObject {
     @Published public var shortcutModifiers: UInt32 {
         didSet { defaults.set(Int(shortcutModifiers), forKey: "shortcutModifiers") }
     }
+    /// Lets local coding agents request captures through a Unix socket; off by default.
+    @Published public var agentAccessEnabled: Bool {
+        didSet { defaults.set(agentAccessEnabled, forKey: "agentAccessEnabled") }
+    }
     @Published public var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
@@ -51,6 +55,7 @@ public final class AppSettings: ObservableObject {
         doubleOptionEnabled = defaults.bool(forKey: "doubleOptionEnabled")
         shortcutKeyCode = UInt32(clamping: defaults.integer(forKey: "shortcutKeyCode"))
         shortcutModifiers = UInt32(clamping: defaults.integer(forKey: "shortcutModifiers"))
+        agentAccessEnabled = defaults.bool(forKey: "agentAccessEnabled")
         hasCompletedOnboarding = defaults.bool(forKey: "hasCompletedOnboarding")
     }
 

@@ -29,6 +29,21 @@ Download the notarized DMG from [Releases](https://github.com/twdnhfr/snappile/r
 - Stack limit: 5, 10, 20, or 50 images; 20 by default. Compressed PNG data in the stack is also limited to 256 MiB.
 - Choose the left or right edge. New captures place the stack on the display used for the capture.
 
+## Coding agents
+
+Coding agents such as Claude Code can ask SnapPile for screenshots through the [Model Context Protocol](https://modelcontextprotocol.io). Turn on **Settings → Coding Agents → Allow Agent Requests** (off by default), then copy the setup command shown there, for example:
+
+```sh
+claude mcp add --scope user snappile -- '/Applications/SnapPile.app/Contents/MacOS/SnapPile' mcp
+```
+
+Other MCP clients start the same executable with the argument `mcp`. It provides two tools:
+
+- `request_screenshot` starts the usual area selection, labeled with the agent's reason. The agent waits until you capture an area or press Esc. The capture also lands in the pile.
+- `get_latest_screenshot` returns the newest image already in the pile, without asking.
+
+Agents cannot capture without your selection. Images longer than 1568 pixels on either edge are scaled down for the agent; the pile keeps the original. The MCP process talks to the running app over a Unix socket at `~/Library/Application Support/de.wdnhfr.snappile/agent.sock`, which only your user account can open. Nothing is written to disk. If SnapPile is not running or agent access is off, the tools report that instead.
+
 ## Image lifetime
 
 Captures initially exist only as compressed PNG data in memory. Thumbnails are limited to a maximum edge length of 520 pixels. There is no database or cloud service. Preferences are stored in macOS user defaults.

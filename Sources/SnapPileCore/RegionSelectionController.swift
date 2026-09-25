@@ -12,7 +12,8 @@ public final class RegionSelectionController {
 
     public init() {}
 
-    public func begin(completion: @escaping (CaptureSelection?) -> Void) {
+    /// `agentReason` marks a selection that a coding agent requested.
+    public func begin(agentReason: String? = nil, completion: @escaping (CaptureSelection?) -> Void) {
         cancel()
         self.completion = completion
         finished = false
@@ -23,7 +24,8 @@ public final class RegionSelectionController {
         // Key events reach only the key window, so Space state is shared across displays.
         let keyState = SelectionKeyState()
         for screen in NSScreen.screens {
-            let view = SelectionOverlayView(screenFrame: screen.frame, keyState: keyState) { [weak self] result in
+            let view = SelectionOverlayView(screenFrame: screen.frame, keyState: keyState, agentReason: agentReason) {
+                [weak self] result in
                 self?.finish(result)
             }
             let window = SelectionWindow(
@@ -97,16 +99,18 @@ final class SelectionOverlayView: NSView {
     private let screenFrame: CGRect
     private let displayID: CGDirectDisplayID
     private let keyState: SelectionKeyState
+    private let agentReason: String?
     private let report: (CaptureSelection?) -> Void
     private var drag = SelectionDragState(bounds: .zero)
     var currentMousePoint: (() -> CGPoint)?
 
     init(
-        screenFrame: CGRect, keyState: SelectionKeyState = SelectionKeyState(),
+        screenFrame: CGRect, keyState: SelectionKeyState = SelectionKeyState(), agentReason: String? = nil,
         report: @escaping (CaptureSelection?) -> Void
     ) {
         self.screenFrame = screenFrame
         self.keyState = keyState
+        self.agentReason = agentReason
         self.displayID =
             (NSScreen.screens.first(where: { $0.frame == screenFrame })?.deviceDescription[
                 NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
@@ -140,14 +144,31 @@ final class SelectionOverlayView: NSView {
     }
 
     private func drawInstruction() {
-        let text = L10n.text("Select area  ·  Space to move  ·  Esc to cancel")
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.white,
-        ]
-        let size = (text as NSString).size(withAttributes: attrs)
-        (text as NSString).draw(
-            at: CGPoint(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2), withAttributes: attrs
-        )
+        var lines: [(String, NSFont)] = []
+        if let agentReason {
+            lines.append((L10n.text("A coding agent requests a screenshot"), .boldSystemFont(ofSize: 15)))
+            if !agentReason.isEmpty { lines.append((agentReason, .systemFont(ofSize: 14))) }
+        }
+        lines.append((L10n.text("Select area  ·  Space to move  ·  Esc to cancel"), .systemFont(ofSize: 13)))
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
+        let texts = lines.map { text, font in
+            NSAttributedString(
+                string: text, attributes: [.font: font, .foregroundColor: NSColor.white, .paragraphStyle: centered])
+        }
+        let maxWidth = min(720, bounds.width - 40)
+        let sizes = texts.map {
+            $0.boundingRect(with: NSSize(width: maxWidth, height: 200), options: .usesLineFragmentOrigin).size
+        }
+        let spacing: CGFloat = 8
+        var top = (bounds.height + sizes.reduce(0) { $0 + $1.height } + spacing * CGFloat(sizes.count - 1)) / 2
+        for (text, size) in zip(texts, sizes) {
+            top -= size.height
+            text.draw(
+                with: CGRect(x: (bounds.width - size.width) / 2, y: top, width: size.width, height: size.height),
+                options: .usesLineFragmentOrigin)
+            top -= spacing
+        }
     }
 
     override func mouseDown(with event: NSEvent) {

@@ -109,6 +109,28 @@ struct SettingsView: View {
                 } header: {
                     Text(L10n.text("Your Pile"))
                 }
+                Section {
+                    Toggle(L10n.text("Allow Agent Requests"), isOn: $settings.agentAccessEnabled).tint(pileAccent)
+                    Text(
+                        L10n.text(
+                            "Coding agents on this Mac can ask you for a screenshot and read the newest image in the pile. You select every new area yourself."
+                        )
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
+                    if let error = model.agentAccessError {
+                        Text(error).font(.caption).foregroundStyle(.orange)
+                    }
+                    if settings.agentAccessEnabled {
+                        HStack(alignment: .top) {
+                            Text(model.agentSetupCommand).font(.system(size: 10, design: .monospaced))
+                                .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                            Spacer()
+                            Button(L10n.text("Copy"), action: model.copyAgentSetupCommand).controlSize(.small)
+                        }
+                    }
+                } header: {
+                    Text(L10n.text("Coding Agents"))
+                }
             }.formStyle(.grouped).scrollContentBackground(.hidden)
             if let message = model.message {
                 Label(message, systemImage: model.messageIsError ? "exclamationmark.circle" : "checkmark.circle")
