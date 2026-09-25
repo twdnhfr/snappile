@@ -27,6 +27,10 @@ public final class AppSettings: ObservableObject {
     @Published public var agentAccessEnabled: Bool {
         didSet { defaults.set(agentAccessEnabled, forKey: "agentAccessEnabled") }
     }
+    /// Lets agents capture whole displays without a selection; requires `agentAccessEnabled`.
+    @Published public var agentScreenCaptureEnabled: Bool {
+        didSet { defaults.set(agentScreenCaptureEnabled, forKey: "agentScreenCaptureEnabled") }
+    }
     @Published public var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
@@ -56,6 +60,7 @@ public final class AppSettings: ObservableObject {
         shortcutKeyCode = UInt32(clamping: defaults.integer(forKey: "shortcutKeyCode"))
         shortcutModifiers = UInt32(clamping: defaults.integer(forKey: "shortcutModifiers"))
         agentAccessEnabled = defaults.bool(forKey: "agentAccessEnabled")
+        agentScreenCaptureEnabled = defaults.bool(forKey: "agentScreenCaptureEnabled")
         hasCompletedOnboarding = defaults.bool(forKey: "hasCompletedOnboarding")
     }
 

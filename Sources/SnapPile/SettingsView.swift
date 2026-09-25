@@ -121,6 +121,14 @@ struct SettingsView: View {
                         Text(error).font(.caption).foregroundStyle(.orange)
                     }
                     if settings.agentAccessEnabled {
+                        Toggle(L10n.text("Allow Captures Without Selection"), isOn: $settings.agentScreenCaptureEnabled)
+                            .tint(pileAccent)
+                        Text(
+                            L10n.text(
+                                "Agents can then capture a whole display at any time without asking. These captures go only to the agent, not into the pile."
+                            )
+                        )
+                        .font(.caption).foregroundStyle(settings.agentScreenCaptureEnabled ? .orange : .secondary)
                         HStack(alignment: .top) {
                             Text(model.agentSetupCommand).font(.system(size: 10, design: .monospaced))
                                 .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)

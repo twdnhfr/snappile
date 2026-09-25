@@ -399,6 +399,30 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             case .cancelled: return .failure(L10n.text("The user cancelled the screenshot."))
             case .failed(let message): return .failure(message)
             }
+        case .screen:
+            return await captureDisplayForAgent(request.display ?? 1)
+        }
+    }
+
+    /// Goes only to the agent: frequent agent captures must not push the user's images out of the pile.
+    private func captureDisplayForAgent(_ number: Int) async -> AgentResponse {
+        guard settings.agentScreenCaptureEnabled else {
+            return .failure(L10n.text("Captures without selection are turned off in SnapPile's Settings."))
+        }
+        let screens = NSScreen.screens
+        guard screens.indices.contains(number - 1),
+            let displayID =
+                (screens[number - 1].deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")]
+                as? NSNumber)?.uint32Value
+        else { return .failure(L10n.format("There is no display %ld; this Mac has %ld.", number, screens.count)) }
+        let frame = screens[number - 1].frame
+        do {
+            let image = try await captureService.capture(
+                selection: CaptureSelection(displayID: displayID, screenFrame: frame, rect: frame))
+            notify(L10n.text("Screen captured for the agent"))
+            return .image(image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
+        } catch {
+            return .failure(error.localizedDescription)
         }
     }
 

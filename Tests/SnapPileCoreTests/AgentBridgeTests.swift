@@ -79,7 +79,9 @@ final class AgentBridgeTests: XCTestCase {
         let list = try json(server.handle(Data(#"{"jsonrpc":"2.0","id":"a","method":"tools/list"}"#.utf8)))
         XCTAssertEqual(list["id"] as? String, "a")
         let tools = try XCTUnwrap((list["result"] as? [String: Any])?["tools"] as? [[String: Any]])
-        XCTAssertEqual(tools.compactMap { $0["name"] as? String }, ["request_screenshot", "get_latest_screenshot"])
+        XCTAssertEqual(
+            tools.compactMap { $0["name"] as? String },
+            ["request_screenshot", "get_latest_screenshot", "capture_screen"])
 
         let unknown = try json(server.handle(Data(#"{"jsonrpc":"2.0","id":2,"method":"resources/list"}"#.utf8)))
         XCTAssertEqual((unknown["error"] as? [String: Any])?["code"] as? Int, -32601)
@@ -103,6 +105,21 @@ final class AgentBridgeTests: XCTestCase {
         XCTAssertEqual(content.first?["mimeType"] as? String, "image/png")
         XCTAssertEqual(Data(base64Encoded: try XCTUnwrap(content.first?["data"] as? String)), image)
         XCTAssertEqual(content.last?["text"] as? String, "Screenshot, 10 × 10 px.")
+    }
+
+    func testMCPScreenCaptureForwardsDisplay() throws {
+        var forwarded: [AgentRequest] = []
+        let server = MCPServer { request in
+            forwarded.append(request)
+            return .image(self.png(), pixelWidth: 10, pixelHeight: 10)
+        }
+        for arguments in ["{}", #"{"display":2}"#] {
+            let call =
+                #"{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"capture_screen","arguments":"#
+                + arguments + "}}"
+            _ = server.handle(Data(call.utf8))
+        }
+        XCTAssertEqual(forwarded, [AgentRequest(command: .screen), AgentRequest(command: .screen, display: 2)])
     }
 
     func testMCPToolCallReportsAppErrors() throws {

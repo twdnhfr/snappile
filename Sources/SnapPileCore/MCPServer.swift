@@ -51,8 +51,8 @@ public final class MCPServer {
                             ?? "dev",
                     ],
                     "instructions":
-                        "SnapPile is the user's temporary screenshot pile on macOS. Use request_screenshot when you "
-                        + "need to see something on the user's screen; the user selects the area themselves.",
+                        "SnapPile is the user's temporary screenshot pile on macOS. Use capture_screen to see the "
+                        + "user's screen right away, or request_screenshot to let the user select an area.",
                 ])
         case "ping":
             return reply(id: id, result: [:])
@@ -66,6 +66,9 @@ public final class MCPServer {
                 return reply(id: id, result: call(AgentRequest(command: .capture, reason: reason)))
             case "get_latest_screenshot":
                 return reply(id: id, result: call(AgentRequest(command: .latest)))
+            case "capture_screen":
+                let display = arguments["display"] as? Int
+                return reply(id: id, result: call(AgentRequest(command: .screen, display: display)))
             default:
                 return reply(id: id, error: (-32602, "Unknown tool"))
             }
@@ -96,6 +99,21 @@ public final class MCPServer {
                 "Return the newest screenshot in the user's SnapPile pile without asking the user. "
                 + "Use it when the user says they just captured something.",
             "inputSchema": ["type": "object", "properties": [String: Any]()],
+        ],
+        [
+            "name": "capture_screen",
+            "description":
+                "Capture a whole display immediately, without asking the user. Works only when the user has "
+                + "allowed captures without selection in SnapPile's Settings.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "display": [
+                        "type": "integer", "minimum": 1,
+                        "description": "Display number; 1 (default) is the display with the menu bar.",
+                    ]
+                ],
+            ],
         ],
     ]
 

@@ -14,6 +14,6 @@
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSScreenCaptureUsageDescription</key><string>SnapPile captures only the screen area you select and keeps it temporarily in memory.</string>
+<key>NSScreenCaptureUsageDescription</key><string>SnapPile captures the screen area you select, or a whole display when you allow coding agents to, and keeps it temporarily in memory.</string>
 <key>NSInputMonitoringUsageDescription</key><string>SnapPile detects the left and right Option keys pressed together to start a capture.</string>
 </dict></plist>

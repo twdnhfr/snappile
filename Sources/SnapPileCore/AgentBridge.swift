@@ -7,15 +7,20 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case capture
         /// The newest image already in the pile.
         case latest
+        /// A whole display, without the user's involvement.
+        case screen
     }
 
     public var command: Command
     /// Shown to the user during area selection.
     public var reason: String?
+    /// 1-based position in the display list; 1 is the display with the menu bar.
+    public var display: Int?
 
-    public init(command: Command, reason: String? = nil) {
+    public init(command: Command, reason: String? = nil, display: Int? = nil) {
         self.command = command
         self.reason = reason
+        self.display = display
     }
 }
 

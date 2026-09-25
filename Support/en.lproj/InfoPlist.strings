@@ -1,2 +1,2 @@
-"NSScreenCaptureUsageDescription" = "SnapPile captures only the screen area you select and keeps it temporarily in memory.";
+"NSScreenCaptureUsageDescription" = "SnapPile captures the screen area you select, or a whole display when you allow coding agents to, and keeps it temporarily in memory.";
 "NSInputMonitoringUsageDescription" = "SnapPile detects the left and right Option keys pressed together to start a capture.";

@@ -9,8 +9,10 @@
 "%ld × %ld · %@ · Click for Preview" = "%ld × %ld · %@ · Click for Preview";
 "A coding agent requests a screenshot" = "A coding agent requests a screenshot";
 "Active" = "Active";
+"Agents can then capture a whole display at any time without asking. These captures go only to the agent, not into the pile." = "Agents can then capture a whole display at any time without asking. These captures go only to the agent, not into the pile.";
 "All set. You can take your first capture." = "All set. You can take your first capture.";
 "Allow Agent Requests" = "Allow Agent Requests";
+"Allow Captures Without Selection" = "Allow Captures Without Selection";
 "Allow Input Monitoring…" = "Allow Input Monitoring…";
 "Allow Screen Access first" = "Allow Screen Access first";
 "Allow Screen Access…" = "Allow Screen Access…";
@@ -25,6 +27,7 @@
 "Capture an idea." = "Capture an idea.";
 "Capture now. Share in seconds." = "Capture now. Share in seconds.";
 "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud." = "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud.";
+"Captures without selection are turned off in SnapPile's Settings." = "Captures without selection are turned off in SnapPile's Settings.";
 "Check permission status again" = "Check permission status again";
 "Choose at least ⌘, ⌃, or ⌥." = "Choose at least ⌘, ⌃, or ⌥.";
 "Close" = "Close";
@@ -93,6 +96,7 @@
 "Save…" = "Save…";
 "Screen Edge" = "Screen Edge";
 "Screen Recording" = "Screen Recording";
+"Screen captured for the agent" = "Screen captured for the agent";
 "Screen recording permission is missing." = "Screen recording permission is missing.";
 "Screen recording permission is still required." = "Screen recording permission is still required.";
 "Screenshot %@" = "Screenshot %@";
@@ -138,6 +142,7 @@
 "The selected display is unavailable." = "The selected display is unavailable.";
 "The specified image dimensions are invalid or do not match the PNG." = "The specified image dimensions are invalid or do not match the PNG.";
 "The user cancelled the screenshot." = "The user cancelled the screenshot.";
+"There is no display %ld; this Mac has %ld." = "There is no display %ld; this Mac has %ld.";
 "This image is no longer in the pile." = "This image is no longer in the pile.";
 "This shortcut is already used by macOS." = "This shortcut is already used by macOS.";
 "Unpin" = "Unpin";
