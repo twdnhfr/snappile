@@ -339,7 +339,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                 var outcome = CaptureOutcome.cancelled
                 defer { completion?(outcome) }
                 do {
-                    let image = try await self.captureService.capture(selection: result)
+                    let image =
+                        if let windowID = result.windowID {
+                            try await self.captureService.capture(windowID: windowID)
+                        } else {
+                            try await self.captureService.capture(selection: result)
+                        }
                     guard !Task.isCancelled, !self.isTerminating, self.captureGeneration == generation else { return }
                     let id = try self.store.add(
                         pngData: image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)

@@ -30,6 +30,7 @@
 "Captures without selection are turned off in SnapPile's Settings." = "Captures without selection are turned off in SnapPile's Settings.";
 "Check permission status again" = "Check permission status again";
 "Choose at least ⌘, ⌃, or ⌥." = "Choose at least ⌘, ⌃, or ⌥.";
+"Click a window  ·  Tap Space for area  ·  Esc to cancel" = "Click a window  ·  Tap Space for area  ·  Esc to cancel";
 "Close" = "Close";
 "Coding Agents" = "Coding Agents";
 "Coding agents on this Mac can ask you for a screenshot and read the newest image in the pile. You select every new area yourself." = "Coding agents on this Mac can ask you for a screenshot and read the newest image in the pile. You select every new area yourself.";
@@ -104,7 +105,7 @@
 "Screenshot at original resolution" = "Screenshot at original resolution";
 "Select All" = "Select All";
 "Select an area, keep it briefly in the pile, and drag it wherever you need it." = "Select an area, keep it briefly in the pile, and drag it wherever you need it.";
-"Select area  ·  Space to move  ·  Esc to cancel" = "Select area  ·  Space to move  ·  Esc to cancel";
+"Select area  ·  Tap Space for windows  ·  Hold Space to move  ·  Esc to cancel" = "Select area  ·  Tap Space for windows  ·  Hold Space to move  ·  Esc to cancel";
 "Set" = "Set";
 "Settings…" = "Settings…";
 "Setup command copied" = "Setup command copied";

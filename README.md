@@ -14,7 +14,7 @@ Download the notarized DMG from [Releases](https://github.com/twdnhfr/snappile/r
 
 1. Use **Allow Screen Access…** in onboarding or **Screen Recording → Allow…** in Settings to grant screen access. If macOS asks you to restart SnapPile, quit and reopen it.
 2. Optionally enable **Input Monitoring → Allow…** to capture by pressing the left and right Option keys together. The fallback shortcut does not need this permission. The double-Option shortcut tracks each key using the event's left/right modifier flags.
-3. Press **⌃⌥S** or choose **Capture Area** from the menu. Drag to select an area; **hold Space** to move the entire selection. Release Space to resize it again. **Return** confirms the current selection; **Esc** cancels.
+3. Press **⌃⌥S** or choose **Capture Area** from the menu. Drag to select an area; **hold Space** to move the entire selection. Release Space to resize it again. **Tap Space** to pick a whole window instead: the window under the pointer is highlighted, and a click or **Return** captures its own content, even where other windows cover it. Tap Space again to go back to area selection. **Return** confirms the current selection; **Esc** cancels.
 4. The screenshot appears at the edge of your screen. Click the card to preview it, or drag it into a compatible app to transfer the original image.
 
 ## Features

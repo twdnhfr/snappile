@@ -191,6 +191,77 @@ final class SelectionDragTests: XCTestCase {
     }
 
     @MainActor
+    func testTappingSpaceSwitchesToWindowPickingAndClickPicksTopmostWindow() throws {
+        _ = NSApplication.shared
+        let keyState = SelectionKeyState()
+        keyState.windows = [
+            PickableWindow(id: 7, app: "Front", frame: CGRect(x: 100, y: 100, width: 200, height: 150)),
+            PickableWindow(id: 8, app: "Back", frame: CGRect(x: 50, y: 50, width: 600, height: 400)),
+        ]
+        var results: [CaptureSelection?] = []
+        let view = SelectionOverlayView(screenFrame: bounds, keyState: keyState) { results.append($0) }
+        view.currentMousePoint = { CGPoint(x: 150, y: 150) }
+
+        view.keyDown(with: try key(.keyDown, code: 49, at: 10))
+        view.keyUp(with: try key(.keyUp, code: 49, at: 10.1))
+        XCTAssertTrue(keyState.picksWindows)
+        XCTAssertEqual(keyState.hoveredWindow?.id, 7)
+
+        view.mouseMoved(with: try mouse(.mouseMoved, at: CGPoint(x: 500, y: 300)))
+        XCTAssertEqual(keyState.hoveredWindow?.id, 8)
+        view.mouseDown(with: try mouse(.leftMouseDown, at: CGPoint(x: 120, y: 120)))
+        XCTAssertEqual(results.count, 1)
+        let picked = try XCTUnwrap(results.first ?? nil)
+        XCTAssertEqual(picked.windowID, 7)
+        XCTAssertEqual(picked.rect, CGRect(x: 100, y: 100, width: 200, height: 150))
+    }
+
+    @MainActor
+    func testTappingSpaceAgainReturnsToAreaSelectionAndHoldingDoesNotSwitch() throws {
+        _ = NSApplication.shared
+        let keyState = SelectionKeyState()
+        var results: [CaptureSelection?] = []
+        let view = SelectionOverlayView(screenFrame: bounds, keyState: keyState) { results.append($0) }
+        view.currentMousePoint = { .zero }
+
+        // Held longer than a tap: only moves, the mode stays.
+        view.keyDown(with: try key(.keyDown, code: 49, at: 10))
+        view.keyUp(with: try key(.keyUp, code: 49, at: 11))
+        XCTAssertFalse(keyState.picksWindows)
+
+        view.keyDown(with: try key(.keyDown, code: 49, at: 20))
+        view.keyUp(with: try key(.keyUp, code: 49, at: 20.1))
+        XCTAssertTrue(keyState.picksWindows)
+        view.keyDown(with: try key(.keyDown, code: 49, at: 30))
+        view.keyUp(with: try key(.keyUp, code: 49, at: 30.1))
+        XCTAssertFalse(keyState.picksWindows)
+
+        view.mouseDown(with: try mouse(.leftMouseDown, at: CGPoint(x: 100, y: 100)))
+        view.mouseUp(with: try mouse(.leftMouseUp, at: CGPoint(x: 150, y: 160)))
+        XCTAssertEqual(try XCTUnwrap(results.first ?? nil).rect, CGRect(x: 100, y: 100, width: 50, height: 60))
+        XCTAssertNil(try XCTUnwrap(results.first ?? nil).windowID)
+    }
+
+    func testWindowListUsesAppKitCoordinatesAndSkipsOwnAndNonAppWindows() {
+        func entry(_ id: Int, pid: Int, layer: Int = 0, bounds: CGRect) -> [String: Any] {
+            [
+                kCGWindowNumber as String: id, kCGWindowOwnerPID as String: pid, kCGWindowLayer as String: layer,
+                kCGWindowOwnerName as String: "App \(id)",
+                kCGWindowBounds as String: bounds.dictionaryRepresentation,
+            ]
+        }
+        let windows = PickableWindow.windows(
+            from: [
+                entry(1, pid: 10, bounds: CGRect(x: 20, y: 30, width: 300, height: 200)),
+                entry(2, pid: 99, bounds: CGRect(x: 0, y: 0, width: 300, height: 200)),
+                entry(3, pid: 10, layer: 25, bounds: CGRect(x: 0, y: 0, width: 300, height: 200)),
+                entry(4, pid: 10, bounds: CGRect(x: 0, y: 0, width: 20, height: 20)),
+            ], excludingPID: 99, primaryHeight: 900)
+        XCTAssertEqual(
+            windows, [PickableWindow(id: 1, app: "App 1", frame: CGRect(x: 20, y: 670, width: 300, height: 200))])
+    }
+
+    @MainActor
     func testSelectionEndsWhenAppResignsActiveOrScreensChange() throws {
         _ = NSApplication.shared
         let controller = RegionSelectionController()
@@ -225,12 +296,14 @@ final class SelectionDragTests: XCTestCase {
     }
 
     @MainActor
-    private func key(_ type: NSEvent.EventType, code: UInt16, repeating: Bool = false) throws -> NSEvent {
+    private func key(
+        _ type: NSEvent.EventType, code: UInt16, repeating: Bool = false, at timestamp: TimeInterval = 0
+    ) throws -> NSEvent {
         // Deliberately unrelated location: keyboard events are not pointer samples.
         try XCTUnwrap(
             NSEvent.keyEvent(
                 with: type, location: CGPoint(x: 799, y: 599), modifierFlags: [],
-                timestamp: 0, windowNumber: 0, context: nil, characters: " ",
+                timestamp: timestamp, windowNumber: 0, context: nil, characters: " ",
                 charactersIgnoringModifiers: " ", isARepeat: repeating, keyCode: code))
     }
 }

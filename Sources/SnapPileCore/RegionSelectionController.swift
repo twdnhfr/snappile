@@ -23,6 +23,12 @@ public final class RegionSelectionController {
         screenFrames = NSScreen.screens.map(\.frame)
         // Key events reach only the key window, so Space state is shared across displays.
         let keyState = SelectionKeyState()
+        keyState.windows = PickableWindow.onScreen(
+            excludingPID: ProcessInfo.processInfo.processIdentifier,
+            primaryHeight: NSScreen.screens.first?.frame.height ?? 0)
+        keyState.onChange = { [weak self] in
+            for window in self?.windows ?? [] { window.contentView?.needsDisplay = true }
+        }
         for screen in NSScreen.screens {
             let view = SelectionOverlayView(screenFrame: screen.frame, keyState: keyState, agentReason: agentReason) {
                 [weak self] result in
@@ -92,7 +98,53 @@ private final class SelectionWindow: NSWindow {
 }
 
 final class SelectionKeyState {
+    /// A shorter press toggles the mode; a longer one only moves the selection.
+    static let tapDuration: TimeInterval = 0.3
+
     var isSpaceHeld = false
+    var isMouseDown = false
+    /// Tapping Space switches between area and window selection.
+    var picksWindows = false
+    var windows: [PickableWindow] = []
+    var hoveredWindow: PickableWindow?
+    var onChange: (() -> Void)?
+    fileprivate var spacePressedAt: TimeInterval = 0
+    fileprivate var spaceUsedForMoving = false
+}
+
+struct PickableWindow: Equatable {
+    let id: CGWindowID
+    let app: String
+    /// Global AppKit coordinates, whose origin is at the bottom left.
+    let frame: CGRect
+
+    /// Visible app windows, front to back.
+    static func onScreen(excludingPID pid: pid_t, primaryHeight: CGFloat) -> [PickableWindow] {
+        let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+        return windows(from: (info as? [[String: Any]]) ?? [], excludingPID: pid, primaryHeight: primaryHeight)
+    }
+
+    /// CGWindowList bounds start at the top left of the primary display.
+    static func windows(
+        from info: [[String: Any]], excludingPID pid: pid_t, primaryHeight: CGFloat
+    )
+        -> [PickableWindow]
+    {
+        info.compactMap { entry in
+            guard (entry[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
+                (entry[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value != pid,
+                (entry[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1 > 0,
+                let id = (entry[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
+                let boundsInfo = entry[kCGWindowBounds as String] as? NSDictionary,
+                let bounds = CGRect(dictionaryRepresentation: boundsInfo as CFDictionary),
+                bounds.width >= 40, bounds.height >= 40
+            else { return nil }
+            return PickableWindow(
+                id: id, app: entry[kCGWindowOwnerName as String] as? String ?? "",
+                frame: CGRect(
+                    x: bounds.minX, y: primaryHeight - bounds.maxY, width: bounds.width, height: bounds.height))
+        }
+    }
 }
 
 final class SelectionOverlayView: NSView {
@@ -118,6 +170,9 @@ final class SelectionOverlayView: NSView {
         super.init(frame: CGRect(origin: .zero, size: screenFrame.size))
         drag = SelectionDragState(bounds: CGRect(origin: .zero, size: screenFrame.size))
         wantsLayer = true
+        // Hovering highlights windows on every display, not only in the key window.
+        addTrackingArea(
+            NSTrackingArea(rect: .zero, options: [.mouseMoved, .activeAlways, .inVisibleRect], owner: self))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var acceptsFirstResponder: Bool { true }
@@ -127,6 +182,11 @@ final class SelectionOverlayView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         NSColor(calibratedWhite: 0, alpha: 0.42).setFill()
         bounds.fill()
+        if keyState.picksWindows {
+            drawHoveredWindow()
+            drawInstruction()
+            return
+        }
         guard !drag.current.isEmpty else {
             drawInstruction()
             return
@@ -149,7 +209,13 @@ final class SelectionOverlayView: NSView {
             lines.append((L10n.text("A coding agent requests a screenshot"), .boldSystemFont(ofSize: 15)))
             if !agentReason.isEmpty { lines.append((agentReason, .systemFont(ofSize: 14))) }
         }
-        lines.append((L10n.text("Select area  ·  Space to move  ·  Esc to cancel"), .systemFont(ofSize: 13)))
+        lines.append(
+            (
+                keyState.picksWindows
+                    ? L10n.text("Click a window  ·  Tap Space for area  ·  Esc to cancel")
+                    : L10n.text("Select area  ·  Tap Space for windows  ·  Hold Space to move  ·  Esc to cancel"),
+                .systemFont(ofSize: 13)
+            ))
         let centered = NSMutableParagraphStyle()
         centered.alignment = .center
         let texts = lines.map { text, font in
@@ -161,7 +227,17 @@ final class SelectionOverlayView: NSView {
             $0.boundingRect(with: NSSize(width: maxWidth, height: 200), options: .usesLineFragmentOrigin).size
         }
         let spacing: CGFloat = 8
-        var top = (bounds.height + sizes.reduce(0) { $0 + $1.height } + spacing * CGFloat(sizes.count - 1)) / 2
+        let height = sizes.reduce(0) { $0 + $1.height } + spacing * CGFloat(sizes.count - 1)
+        let width = sizes.map(\.width).max() ?? 0
+        // Keeps the text readable on top of a highlighted window.
+        NSColor(calibratedWhite: 0, alpha: 0.55).setFill()
+        NSBezierPath(
+            roundedRect: CGRect(
+                x: (bounds.width - width) / 2 - 16, y: (bounds.height - height) / 2 - 10, width: width + 32,
+                height: height + 20),
+            xRadius: 10, yRadius: 10
+        ).fill()
+        var top = (bounds.height + height) / 2
         for (text, size) in zip(texts, sizes) {
             top -= size.height
             text.draw(
@@ -171,20 +247,72 @@ final class SelectionOverlayView: NSView {
         }
     }
 
+    private func drawHoveredWindow() {
+        guard let hovered = keyState.hoveredWindow else { return }
+        let rect = hovered.frame.offsetBy(dx: -screenFrame.minX, dy: -screenFrame.minY).intersection(bounds)
+        guard !rect.isNull, !rect.isEmpty else { return }
+        NSGraphicsContext.current?.cgContext.clear(rect)
+        NSColor.controlAccentColor.withAlphaComponent(0.18).setFill()
+        rect.fill()
+        let border = NSBezierPath(rect: rect.insetBy(dx: 1.5, dy: 1.5))
+        border.lineWidth = 3
+        NSColor.controlAccentColor.setStroke()
+        border.stroke()
+        let label = NSAttributedString(
+            string: hovered.app,
+            attributes: [.font: NSFont.boldSystemFont(ofSize: 13), .foregroundColor: NSColor.white])
+        let size = label.size()
+        let badge = CGRect(
+            x: rect.minX + 10, y: rect.maxY - size.height - 18, width: size.width + 16, height: size.height + 8)
+        NSColor.controlAccentColor.setFill()
+        NSBezierPath(roundedRect: badge, xRadius: 6, yRadius: 6).fill()
+        label.draw(at: CGPoint(x: badge.minX + 8, y: badge.minY + 4))
+    }
+
+    private func hover(at point: CGPoint) {
+        let global = CGPoint(x: point.x + screenFrame.minX, y: point.y + screenFrame.minY)
+        let hovered = keyState.windows.first { $0.frame.contains(global) }
+        guard hovered != keyState.hoveredWindow else { return }
+        keyState.hoveredWindow = hovered
+        needsDisplay = true
+        keyState.onChange?()
+    }
+
+    private func windowSelection(_ picked: PickableWindow) -> CaptureSelection {
+        CaptureSelection(
+            displayID: displayID, screenFrame: screenFrame, rect: picked.frame.intersection(screenFrame),
+            windowID: picked.id)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard keyState.picksWindows else { return }
+        hover(at: convert(event.locationInWindow, from: nil))
+    }
+
     override func mouseDown(with event: NSEvent) {
         window?.makeKey()
         window?.makeFirstResponder(self)
+        keyState.isMouseDown = true
+        if keyState.isSpaceHeld { keyState.spaceUsedForMoving = true }
         let point = convert(event.locationInWindow, from: nil)
+        if keyState.picksWindows {
+            hover(at: point)
+            if let picked = keyState.hoveredWindow { report(windowSelection(picked)) }
+            return
+        }
         // Space may have been pressed or released while another display's window was key.
         drag.setMoving(keyState.isSpaceHeld, at: point)
         drag.begin(at: point)
         needsDisplay = true
     }
     override func mouseDragged(with event: NSEvent) {
+        guard !keyState.picksWindows else { return }
         drag.update(to: convert(event.locationInWindow, from: nil))
         needsDisplay = true
     }
     override func mouseUp(with event: NSEvent) {
+        keyState.isMouseDown = false
+        guard !keyState.picksWindows else { return }
         mouseDragged(with: event)
         drag.end()
         guard drag.current.width >= 2, drag.current.height >= 2 else { return }
@@ -197,9 +325,15 @@ final class SelectionOverlayView: NSView {
         if event.keyCode == 53 {
             report(nil)
         } else if event.keyCode == 49 {
+            if !event.isARepeat {
+                keyState.spacePressedAt = event.timestamp
+                keyState.spaceUsedForMoving = keyState.isMouseDown
+            }
             keyState.isSpaceHeld = true
             drag.setMoving(true, at: currentMousePoint?() ?? windowMousePoint())
             needsDisplay = true
+        } else if event.keyCode == 36, keyState.picksWindows {
+            if let picked = keyState.hoveredWindow { report(windowSelection(picked)) }
         } else if event.keyCode == 36, drag.current.width >= 2, drag.current.height >= 2 {
             report(
                 CaptureSelection(
@@ -213,6 +347,14 @@ final class SelectionOverlayView: NSView {
         if event.keyCode == 49 {
             keyState.isSpaceHeld = false
             drag.setMoving(false, at: currentMousePoint?() ?? windowMousePoint())
+            if !keyState.spaceUsedForMoving, !keyState.isMouseDown,
+                event.timestamp - keyState.spacePressedAt < SelectionKeyState.tapDuration
+            {
+                keyState.picksWindows.toggle()
+                keyState.hoveredWindow = nil
+                if keyState.picksWindows { hover(at: currentMousePoint?() ?? windowMousePoint()) }
+                keyState.onChange?()
+            }
             needsDisplay = true
         } else {
             super.keyUp(with: event)

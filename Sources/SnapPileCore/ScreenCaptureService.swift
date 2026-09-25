@@ -8,11 +8,14 @@ public struct CaptureSelection: Sendable, Equatable {
     public let screenFrame: CGRect
     /// Global AppKit coordinates, whose origin is at the bottom left.
     public let rect: CGRect
+    /// Set when the user picked a window: capture its own content instead of `rect`.
+    public let windowID: CGWindowID?
 
-    public init(displayID: CGDirectDisplayID, screenFrame: CGRect, rect: CGRect) {
+    public init(displayID: CGDirectDisplayID, screenFrame: CGRect, rect: CGRect, windowID: CGWindowID? = nil) {
         self.displayID = displayID
         self.screenFrame = screenFrame
         self.rect = rect
+        self.windowID = windowID
     }
 }
 
