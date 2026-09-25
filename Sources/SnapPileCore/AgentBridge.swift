@@ -9,6 +9,10 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case latest
         /// A whole display, without the user's involvement.
         case screen
+        /// The open windows that `window` can capture.
+        case windows
+        /// One window's own content, even when other windows cover it.
+        case window
     }
 
     public var command: Command
@@ -16,11 +20,56 @@ public struct AgentRequest: Codable, Equatable, Sendable {
     public var reason: String?
     /// 1-based position in the display list; 1 is the display with the menu bar.
     public var display: Int?
+    /// Window filters: an application name or bundle identifier, a title fragment, or an exact window ID.
+    public var app: String?
+    public var title: String?
+    public var windowID: UInt32?
 
-    public init(command: Command, reason: String? = nil, display: Int? = nil) {
+    public init(
+        command: Command, reason: String? = nil, display: Int? = nil, app: String? = nil, title: String? = nil,
+        windowID: UInt32? = nil
+    ) {
         self.command = command
         self.reason = reason
         self.display = display
+        self.app = app
+        self.title = title
+        self.windowID = windowID
+    }
+}
+
+public struct AgentWindow: Codable, Equatable, Sendable {
+    public var id: UInt32
+    public var app: String
+    public var bundleID: String
+    public var title: String
+    public var width: Int
+    public var height: Int
+    /// False for minimized windows and windows on another Space; these have no current content.
+    public var isOnScreen: Bool
+
+    public init(
+        id: UInt32, app: String, bundleID: String, title: String, width: Int, height: Int, isOnScreen: Bool
+    ) {
+        self.id = id
+        self.app = app
+        self.bundleID = bundleID
+        self.title = title
+        self.width = width
+        self.height = height
+        self.isOnScreen = isOnScreen
+    }
+
+    /// `windows` is ordered front to back; the first match is the topmost one.
+    public static func best(in windows: [AgentWindow], id: UInt32?, app: String?, title: String?) -> AgentWindow? {
+        if let id { return windows.first { $0.id == id } }
+        let app = app?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        let title = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let titled = windows.filter { title.isEmpty || $0.title.localizedCaseInsensitiveContains(title) }
+        guard !app.isEmpty else { return titled.first }
+        // An exact name beats a fragment, so "Code" does not pick "Xcode" when VS Code is open.
+        return titled.first { $0.app.lowercased() == app || $0.bundleID.lowercased() == app }
+            ?? titled.first { $0.app.lowercased().contains(app) }
     }
 }
 
@@ -29,6 +78,21 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     public var pixelWidth: Int?
     public var pixelHeight: Int?
     public var error: String?
+    public var windows: [AgentWindow]?
+    /// The captured window, for a `window` request.
+    public var window: AgentWindow?
+
+    public init(
+        pngData: Data? = nil, pixelWidth: Int? = nil, pixelHeight: Int? = nil, error: String? = nil,
+        windows: [AgentWindow]? = nil, window: AgentWindow? = nil
+    ) {
+        self.pngData = pngData
+        self.pixelWidth = pixelWidth
+        self.pixelHeight = pixelHeight
+        self.error = error
+        self.windows = windows
+        self.window = window
+    }
 
     public static func image(_ pngData: Data, pixelWidth: Int, pixelHeight: Int) -> AgentResponse {
         AgentResponse(pngData: pngData, pixelWidth: pixelWidth, pixelHeight: pixelHeight)

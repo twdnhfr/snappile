@@ -37,11 +37,13 @@ Coding agents such as Claude Code can ask SnapPile for screenshots through the [
 claude mcp add --scope user snappile -- '/Applications/SnapPile.app/Contents/MacOS/SnapPile' mcp
 ```
 
-Other MCP clients start the same executable with the argument `mcp`. It provides three tools:
+Other MCP clients start the same executable with the argument `mcp`. It provides five tools:
 
 - `request_screenshot` starts the usual area selection, labeled with the agent's reason. The agent waits until you capture an area or press Esc. The capture also lands in the pile.
 - `get_latest_screenshot` returns the newest image already in the pile, without asking.
 - `capture_screen` captures a whole display right away, without asking. Display 1, the default, is the one with the menu bar. This tool works only after you also turn on **Allow Captures Without Selection**. These captures go only to the agent and never into the pile, so they cannot push your own images out. SnapPile's own panels are not included.
+- `list_windows` lists open windows front to back, with application, title, and window ID.
+- `capture_window` captures one window's own content, even when other windows cover it. Agents pick it by application name or bundle ID, a title fragment, or a window ID; the topmost match wins. Minimized windows and windows on another Space have no current content and are reported instead of captured. Like `capture_screen`, both window tools need **Allow Captures Without Selection** and send images only to the agent.
 
 Images longer than 1568 pixels on either edge are scaled down for the agent; the pile keeps the original. The MCP process talks to the running app over a Unix socket at `~/Library/Application Support/de.wdnhfr.snappile/agent.sock`, which only your user account can open. Nothing is written to disk. If SnapPile is not running or agent access is off, the tools report that instead.
 

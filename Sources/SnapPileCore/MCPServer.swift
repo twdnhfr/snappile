@@ -69,6 +69,13 @@ public final class MCPServer {
             case "capture_screen":
                 let display = arguments["display"] as? Int
                 return reply(id: id, result: call(AgentRequest(command: .screen, display: display)))
+            case "list_windows":
+                return reply(id: id, result: listWindows())
+            case "capture_window":
+                let request = AgentRequest(
+                    command: .window, app: arguments["app"] as? String, title: arguments["title"] as? String,
+                    windowID: (arguments["window_id"] as? NSNumber)?.uint32Value)
+                return reply(id: id, result: call(request))
             default:
                 return reply(id: id, error: (-32602, "Unknown tool"))
             }
@@ -115,7 +122,46 @@ public final class MCPServer {
                 ],
             ],
         ],
+        [
+            "name": "list_windows",
+            "description":
+                "List the user's open windows, front to back, with application, title, and window ID. "
+                + "Works only when the user has allowed captures without selection in SnapPile's Settings.",
+            "inputSchema": ["type": "object", "properties": [String: Any]()],
+        ],
+        [
+            "name": "capture_window",
+            "description":
+                "Capture one window's content without asking the user, even when other windows cover it. "
+                + "Pick it by application and optionally title; the topmost match wins. Minimized windows and "
+                + "windows on another Space cannot be captured. Works only when the user has allowed captures "
+                + "without selection in SnapPile's Settings.",
+            "inputSchema": [
+                "type": "object",
+                "properties": [
+                    "app": [
+                        "type": "string",
+                        "description": "Application name or bundle ID, e.g. \"Safari\" or \"com.google.Chrome\".",
+                    ],
+                    "title": ["type": "string", "description": "Part of the window title."],
+                    "window_id": ["type": "integer", "description": "Exact ID from list_windows."],
+                ],
+            ],
+        ],
     ]
+
+    private func listWindows() -> [String: Any] {
+        let response: AgentResponse
+        do { response = try bridge(AgentRequest(command: .windows)) } catch {
+            return Self.toolError(error.localizedDescription)
+        }
+        if let message = response.error { return Self.toolError(message) }
+        let lines = (response.windows ?? []).map { window in
+            "\(window.id): \(window.app) (\(window.bundleID)) · \"\(window.title)\" · \(window.width) × \(window.height) pt"
+                + (window.isOnScreen ? "" : " · minimized or on another Space")
+        }
+        return ["content": [["type": "text", "text": lines.isEmpty ? "No windows." : lines.joined(separator: "\n")]]]
+    }
 
     private func call(_ request: AgentRequest) -> [String: Any] {
         let response: AgentResponse
@@ -125,6 +171,9 @@ public final class MCPServer {
             return Self.toolError(AgentBridgeError.invalidResponse.localizedDescription)
         }
         var summary = "Screenshot, \(width) × \(height) px"
+        if let window = response.window {
+            summary = "Window \(window.id) of \(window.app), \"\(window.title)\", \(width) × \(height) px"
+        }
         var data = png
         if let scaled = Self.downscaled(png, maxEdge: Self.maxImageEdge) {
             data = scaled.data

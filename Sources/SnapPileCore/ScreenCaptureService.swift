@@ -50,6 +50,8 @@ public enum ScreenCaptureError: LocalizedError, Equatable {
     case displayUnavailable
     case captureFailed
     case pngEncodingFailed
+    case windowUnavailable
+    case windowNotOnScreen
 
     public var errorDescription: String? {
         switch self {
@@ -58,6 +60,9 @@ public enum ScreenCaptureError: LocalizedError, Equatable {
         case .displayUnavailable: return L10n.text("The selected display is unavailable.")
         case .captureFailed: return L10n.text("The screen could not be captured.")
         case .pngEncodingFailed: return L10n.text("The captured image could not be encoded as PNG.")
+        case .windowUnavailable: return L10n.text("The window is no longer open.")
+        case .windowNotOnScreen:
+            return L10n.text("The window is minimized or on another Space, so it has no current content.")
         }
     }
 }
@@ -117,6 +122,60 @@ public final class ScreenCaptureService {
             try Self.encodePNG(image, scale: scale)
         }.value
         return CapturedImage(pngData: data, pixelWidth: width, pixelHeight: height)
+    }
+
+    /// Normal app windows, front to back; on-screen windows come first.
+    public func windows() async throws -> [AgentWindow] {
+        guard hasPermission else { throw ScreenCaptureError.permissionDenied }
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
+        let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+        let order = ((info as? [[String: Any]]) ?? []).compactMap {
+            ($0[kCGWindowNumber as String] as? NSNumber)?.uint32Value
+        }
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        return content.windows.compactMap { window -> (AgentWindow, Int)? in
+            guard window.windowLayer == 0, window.frame.width >= 40, window.frame.height >= 40,
+                let app = window.owningApplication, app.processID != ownPID
+            else { return nil }
+            let title = window.title ?? ""
+            // Apps keep many hidden, untitled helper windows off screen.
+            guard window.isOnScreen || !title.isEmpty else { return nil }
+            let entry = AgentWindow(
+                id: window.windowID, app: app.applicationName, bundleID: app.bundleIdentifier, title: title,
+                width: Int(window.frame.width), height: Int(window.frame.height), isOnScreen: window.isOnScreen)
+            return (entry, order.firstIndex(of: window.windowID) ?? Int.max)
+        }
+        .sorted { $0.1 < $1.1 }
+        .map(\.0)
+    }
+
+    /// Captures the window's own content, so covering windows do not appear.
+    public func capture(windowID: UInt32) async throws -> CapturedImage {
+        guard hasPermission else { throw ScreenCaptureError.permissionDenied }
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
+        guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+            throw ScreenCaptureError.windowUnavailable
+        }
+        guard window.isOnScreen else { throw ScreenCaptureError.windowNotOnScreen }
+        let filter = SCContentFilter(desktopIndependentWindow: window)
+        let scale: CGFloat
+        if #available(macOS 14.2, *) {
+            scale = CGFloat(filter.pointPixelScale)
+        } else {
+            scale = NSScreen.screens.first { $0.frame.intersects(window.frame) }?.backingScaleFactor ?? 2
+        }
+        let configuration = SCStreamConfiguration()
+        configuration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
+        configuration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
+        configuration.showsCursor = false
+        let image: CGImage
+        do {
+            image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        } catch { throw ScreenCaptureError.captureFailed }
+        let data = try await Task.detached(priority: .userInitiated) {
+            try Self.encodePNG(image, scale: scale)
+        }.value
+        return CapturedImage(pngData: data, pixelWidth: image.width, pixelHeight: image.height)
     }
 
     /// Records the display scale as DPI so receivers place Retina captures at their on-screen size.

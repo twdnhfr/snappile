@@ -73,6 +73,7 @@
 "Minimize" = "Minimize";
 "Modifier %@" = "Modifier %@";
 "New Capture" = "New Capture";
+"No open window matches. List the windows to see what is open." = "No open window matches. List the windows to see what is open.";
 "OPTIONAL" = "OPTIONAL";
 "Original resolution · Save or copy to share the full image." = "Original resolution · Save or copy to share the full image.";
 "PNG saved" = "PNG saved";
@@ -142,11 +143,14 @@
 "The selected display is unavailable." = "The selected display is unavailable.";
 "The specified image dimensions are invalid or do not match the PNG." = "The specified image dimensions are invalid or do not match the PNG.";
 "The user cancelled the screenshot." = "The user cancelled the screenshot.";
+"The window is minimized or on another Space, so it has no current content." = "The window is minimized or on another Space, so it has no current content.";
+"The window is no longer open." = "The window is no longer open.";
 "There is no display %ld; this Mac has %ld." = "There is no display %ld; this Mac has %ld.";
 "This image is no longer in the pile." = "This image is no longer in the pile.";
 "This shortcut is already used by macOS." = "This shortcut is already used by macOS.";
 "Unpin" = "Unpin";
 "Welcome to SnapPile" = "Welcome to SnapPile";
+"Window of %@ captured for the agent" = "Window of %@ captured for the agent";
 "Window" = "Window";
 "You choose the area for each capture. SnapPile keeps it temporarily in your pile." = "You choose the area for each capture. SnapPile keeps it temporarily in your pile.";
 "Your Pile" = "Your Pile";

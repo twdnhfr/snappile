@@ -81,7 +81,7 @@ final class AgentBridgeTests: XCTestCase {
         let tools = try XCTUnwrap((list["result"] as? [String: Any])?["tools"] as? [[String: Any]])
         XCTAssertEqual(
             tools.compactMap { $0["name"] as? String },
-            ["request_screenshot", "get_latest_screenshot", "capture_screen"])
+            ["request_screenshot", "get_latest_screenshot", "capture_screen", "list_windows", "capture_window"])
 
         let unknown = try json(server.handle(Data(#"{"jsonrpc":"2.0","id":2,"method":"resources/list"}"#.utf8)))
         XCTAssertEqual((unknown["error"] as? [String: Any])?["code"] as? Int, -32601)
@@ -120,6 +120,64 @@ final class AgentBridgeTests: XCTestCase {
             _ = server.handle(Data(call.utf8))
         }
         XCTAssertEqual(forwarded, [AgentRequest(command: .screen), AgentRequest(command: .screen, display: 2)])
+    }
+
+    private let windows = [
+        AgentWindow(
+            id: 1, app: "Xcode", bundleID: "com.apple.dt.Xcode", title: "SnapPile", width: 800, height: 600,
+            isOnScreen: true),
+        AgentWindow(
+            id: 2, app: "Code", bundleID: "com.microsoft.VSCode", title: "notes.md", width: 800, height: 600,
+            isOnScreen: true),
+        AgentWindow(
+            id: 3, app: "Safari", bundleID: "com.apple.Safari", title: "Docs – Apple", width: 1200, height: 800,
+            isOnScreen: true),
+        AgentWindow(
+            id: 4, app: "Safari", bundleID: "com.apple.Safari", title: "GitHub", width: 1200, height: 800,
+            isOnScreen: false),
+    ]
+
+    func testWindowMatchingPrefersExactAppsAndTopmostWindow() {
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: "safari", title: nil)?.id, 3)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: "com.apple.Safari", title: "github")?.id, 4)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: "Code", title: nil)?.id, 2)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: "xco", title: nil)?.id, 1)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: nil, title: "notes")?.id, 2)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: nil, app: nil, title: nil)?.id, 1)
+        XCTAssertEqual(AgentWindow.best(in: windows, id: 4, app: "Xcode", title: nil)?.id, 4)
+        XCTAssertNil(AgentWindow.best(in: windows, id: nil, app: "Chrome", title: nil))
+    }
+
+    func testMCPListsAndCapturesWindows() throws {
+        var forwarded: [AgentRequest] = []
+        let windows = windows
+        let server = MCPServer { request in
+            forwarded.append(request)
+            if request.command == .windows { return AgentResponse(windows: windows) }
+            var response = AgentResponse.image(self.png(), pixelWidth: 10, pixelHeight: 10)
+            response.window = windows[2]
+            return response
+        }
+        let list = try json(
+            server.handle(
+                Data(#"{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"list_windows"}}"#.utf8)))
+        let text = try XCTUnwrap(
+            ((list["result"] as? [String: Any])?["content"] as? [[String: Any]])?.first?["text"] as? String)
+        XCTAssertTrue(text.contains(#"3: Safari (com.apple.Safari) · "Docs – Apple" · 1200 × 800 pt"#))
+        XCTAssertTrue(text.contains(#"4: Safari (com.apple.Safari) · "GitHub" · 1200 × 800 pt · minimized"#))
+
+        let call =
+            #"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"capture_window","#
+            + #""arguments":{"app":"Safari","title":"Docs","window_id":3}}}"#
+        let capture = try json(server.handle(Data(call.utf8)))
+        let content = try XCTUnwrap((capture["result"] as? [String: Any])?["content"] as? [[String: Any]])
+        XCTAssertEqual(content.last?["text"] as? String, #"Window 3 of Safari, "Docs – Apple", 10 × 10 px."#)
+        XCTAssertEqual(
+            forwarded,
+            [
+                AgentRequest(command: .windows),
+                AgentRequest(command: .window, app: "Safari", title: "Docs", windowID: 3),
+            ])
     }
 
     func testMCPToolCallReportsAppErrors() throws {

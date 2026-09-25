@@ -401,6 +401,26 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             }
         case .screen:
             return await captureDisplayForAgent(request.display ?? 1)
+        case .windows, .window:
+            guard settings.agentScreenCaptureEnabled else {
+                return .failure(L10n.text("Captures without selection are turned off in SnapPile's Settings."))
+            }
+            do {
+                let windows = try await captureService.windows()
+                guard request.command == .window else { return AgentResponse(windows: windows) }
+                guard
+                    let target = AgentWindow.best(
+                        in: windows, id: request.windowID, app: request.app, title: request.title)
+                else { return .failure(L10n.text("No open window matches. List the windows to see what is open.")) }
+                let image = try await captureService.capture(windowID: target.id)
+                notify(L10n.format("Window of %@ captured for the agent", target.app))
+                var response = AgentResponse.image(
+                    image.pngData, pixelWidth: image.pixelWidth, pixelHeight: image.pixelHeight)
+                response.window = target
+                return response
+            } catch {
+                return .failure(error.localizedDescription)
+            }
         }
     }
 
