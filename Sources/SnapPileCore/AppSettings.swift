@@ -31,6 +31,10 @@ public final class AppSettings: ObservableObject {
     @Published public var agentScreenCaptureEnabled: Bool {
         didSet { defaults.set(agentScreenCaptureEnabled, forKey: "agentScreenCaptureEnabled") }
     }
+    /// Checks daily, downloads in the background, and installs when SnapPile quits.
+    @Published public var automaticUpdates: Bool {
+        didSet { defaults.set(automaticUpdates, forKey: "automaticUpdates") }
+    }
     @Published public var hasCompletedOnboarding: Bool {
         didSet { defaults.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
@@ -48,7 +52,7 @@ public final class AppSettings: ObservableObject {
         self.defaults = defaults
         defaults.register(defaults: [
             "expiryMinutes": 30, "maxItems": 20, "stackSide": "right", "doubleOptionEnabled": true,
-            "shortcutKeyCode": 1, "shortcutModifiers": Int(controlKey | optionKey),
+            "shortcutKeyCode": 1, "shortcutModifiers": Int(controlKey | optionKey), "automaticUpdates": true,
         ])
         expiryMinutes =
             [5, 15, 30, 60, 120].contains(defaults.integer(forKey: "expiryMinutes"))
@@ -61,6 +65,7 @@ public final class AppSettings: ObservableObject {
         shortcutModifiers = UInt32(clamping: defaults.integer(forKey: "shortcutModifiers"))
         agentAccessEnabled = defaults.bool(forKey: "agentAccessEnabled")
         agentScreenCaptureEnabled = defaults.bool(forKey: "agentScreenCaptureEnabled")
+        automaticUpdates = defaults.bool(forKey: "automaticUpdates")
         hasCompletedOnboarding = defaults.bool(forKey: "hasCompletedOnboarding")
     }
 

@@ -29,6 +29,12 @@ Download the notarized DMG from [Releases](https://github.com/twdnhfr/snappile/r
 - Stack limit: 5, 10, 20, or 50 images; 20 by default. Compressed PNG data in the stack is also limited to 256 MiB.
 - Choose the left or right edge. New captures place the stack on the display used for the capture.
 
+## Updates
+
+SnapPile checks GitHub for a new release once a day, starting shortly after launch. It downloads a newer version in the background and installs it when you quit, because quitting discards the pile anyway. To update right away, choose **Install and Restart** in the menu or in **Settings → Updates**; if the pile contains images, SnapPile asks first. Turn off **Install Updates Automatically** to check only when you choose **Check Now**.
+
+An update is installed only if its disk image matches the SHA-256 digest that GitHub publishes for it, and the app inside carries SnapPile's bundle identifier, the expected version, and a valid signature from the same Developer ID team as the running app. The download and the verified copy live in a private temporary directory that is removed after installation. Ad hoc signed builds, and copies that macOS runs from a translocated or read-only location, do not update themselves.
+
 ## Coding agents
 
 Coding agents such as Claude Code can ask SnapPile for screenshots through the [Model Context Protocol](https://modelcontextprotocol.io). Turn on **Settings → Coding Agents → Allow Agent Requests** (off by default), then copy the setup command shown there, for example:

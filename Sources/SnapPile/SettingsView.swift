@@ -6,6 +6,7 @@ struct SettingsView: View {
     @ObservedObject var model: AppController
     @ObservedObject var settings: AppSettings
     @ObservedObject var store: ScreenshotStore
+    @ObservedObject var updater: AppUpdater
     @State private var shortcutCode: UInt32
     @State private var shortcutMods: UInt32
     @State private var shortcutSaved = false
@@ -13,6 +14,7 @@ struct SettingsView: View {
         self.model = model
         settings = model.settings
         store = model.store
+        updater = model.updater
         _shortcutCode = State(initialValue: model.settings.shortcutKeyCode)
         _shortcutMods = State(initialValue: model.settings.shortcutModifiers)
     }
@@ -139,6 +141,24 @@ struct SettingsView: View {
                 } header: {
                     Text(L10n.text("Coding Agents"))
                 }
+                Section {
+                    Toggle(L10n.text("Install Updates Automatically"), isOn: $settings.automaticUpdates)
+                        .tint(pileAccent).disabled(updater.installer == nil)
+                    HStack {
+                        Text(updateStatus).font(.caption).foregroundStyle(updateStatusIsError ? .orange : .secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        if case .ready = updater.state {
+                            Button(L10n.text("Install and Restart"), action: model.installUpdateAndRestart)
+                                .controlSize(.small)
+                        } else {
+                            Button(L10n.text("Check Now"), action: model.checkForUpdates).controlSize(.small)
+                                .disabled(updater.installer == nil || updater.state == .checking || isDownloading)
+                        }
+                    }
+                } header: {
+                    Text(L10n.text("Updates"))
+                }
             }.formStyle(.grouped).scrollContentBackground(.hidden)
             if let message = model.message {
                 Label(message, systemImage: model.messageIsError ? "exclamationmark.circle" : "checkmark.circle")
@@ -172,6 +192,30 @@ struct SettingsView: View {
             .onAppear { model.refreshPermissions() }
             .onChange(of: shortcutCode) { _, _ in shortcutSaved = false }
             .onChange(of: shortcutMods) { _, _ in shortcutSaved = false }
+    }
+    private var isDownloading: Bool {
+        if case .downloading = updater.state { return true }
+        return false
+    }
+    private var updateStatusIsError: Bool {
+        if updater.unavailableReason != nil { return true }
+        if case .failed = updater.state { return true }
+        return false
+    }
+    private var updateStatus: String {
+        if let reason = updater.unavailableReason { return reason }
+        switch updater.state {
+        case .idle: return L10n.format("Version %@", updater.currentVersion)
+        case .checking: return L10n.text("Checking for updates…")
+        case .upToDate: return L10n.format("SnapPile %@ is up to date.", updater.currentVersion)
+        case .downloading(let version): return L10n.format("Downloading SnapPile %@…", version)
+        case .ready(let version):
+            return settings.automaticUpdates
+                ? L10n.format("SnapPile %@ is ready and installs when you quit.", version)
+                : L10n.format("SnapPile %@ is ready to install.", version)
+        case .installed: return L10n.text("The update is installed and starts next time.")
+        case .failed(let message): return message
+        }
     }
     private func modifierToggle(_ label: String, mask: UInt32) -> some View {
         Button {
@@ -213,10 +257,12 @@ struct MenuPopoverView: View {
     @ObservedObject var model: AppController
     @ObservedObject var store: ScreenshotStore
     @ObservedObject var settings: AppSettings
+    @ObservedObject var updater: AppUpdater
     init(model: AppController) {
         self.model = model
         store = model.store
         settings = model.settings
+        updater = model.updater
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -268,6 +314,13 @@ struct MenuPopoverView: View {
             Text(model.message ?? L10n.format("Temporary pile · %ld min. retention", settings.expiryMinutes))
                 .font(.system(size: 10)).foregroundStyle(model.messageIsError ? Color.orange : Color.secondary)
                 .lineLimit(2).frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
+            if case .ready(let version) = updater.state {
+                Button(
+                    L10n.format("SnapPile %@ is ready · Install and Restart", version),
+                    action: model.installUpdateAndRestart
+                )
+                .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).foregroundStyle(pileAccent)
+            }
             Divider()
             HStack {
                 Button(L10n.text("Settings…"), action: model.showSettings)

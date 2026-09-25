@@ -67,6 +67,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     let store = ScreenshotStore()
     let captureService = ScreenCaptureService()
     let selection = RegionSelectionController()
+    let updater = AppController.makeUpdater()
     @Published var message: String?
     @Published var messageIsError = false
     @Published var isCapturing = false
@@ -154,6 +155,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         settings.$side.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async { self?.stackController?.reposition() }
         }.store(in: &subscriptions)
+        settings.$automaticUpdates.removeDuplicates().sink { [weak self] enabled in
+            if enabled { self?.updater.startAutomaticChecks() } else { self?.updater.stopAutomaticChecks() }
+        }.store(in: &subscriptions)
         settings.$agentAccessEnabled.removeDuplicates().sink { [weak self] enabled in
             self?.setAgentAccess(enabled)
         }.store(in: &subscriptions)
@@ -216,6 +220,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
 
     func applicationWillTerminate(_ notification: Notification) {
         isTerminating = true
+        // The pile is discarded now anyway, so a prepared update costs nothing here.
+        if settings.automaticUpdates { updater.installPrepared() }
         captureGeneration = UUID()
         captureTask?.cancel()
         messageTask?.cancel()
@@ -449,6 +455,45 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         } catch {
             return .failure(error.localizedDescription)
         }
+    }
+
+    private static func makeUpdater() -> AppUpdater {
+        let bundle = Bundle.main
+        let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        var reason: String?
+        var installer: UpdateInstaller?
+        if bundle.bundleURL.pathExtension != "app" || bundle.bundleURL.path.contains("/AppTranslocation/") {
+            reason = UpdateError.notWritable.localizedDescription
+        } else if let teamID = UpdateInstaller.currentTeamID(), let bundleID = bundle.bundleIdentifier {
+            installer = UpdateInstaller(
+                bundleID: bundleID, teamID: teamID,
+                workDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
+                    "\(bundleID)-update", isDirectory: true))
+        }
+        return AppUpdater(
+            currentVersion: version, appURL: bundle.bundleURL, installer: installer, unavailableReason: reason)
+    }
+
+    func checkForUpdates() { Task { await updater.checkNow() } }
+
+    func installUpdateAndRestart() {
+        guard case .ready(let version) = updater.state else { return }
+        if !store.items.isEmpty {
+            statusController?.close()
+            let alert = NSAlert()
+            alert.messageText = L10n.format("Install SnapPile %@ now?", version)
+            alert.informativeText = L10n.text("Restarting discards all images in the pile, including pinned ones.")
+            alert.addButton(withTitle: L10n.text("Install and Restart"))
+            alert.addButton(withTitle: L10n.text("Cancel"))
+            NSApp.activate(ignoringOtherApps: true)
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+        }
+        guard updater.installPrepared() else {
+            if case .failed(let message) = updater.state { notify(message, error: true) }
+            return
+        }
+        updater.relaunchAfterExit()
+        NSApp.terminate(nil)
     }
 
     /// Registers the bundled executable as a user-scoped MCP server in Claude Code.

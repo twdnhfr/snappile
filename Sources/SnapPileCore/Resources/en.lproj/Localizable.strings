@@ -20,7 +20,9 @@
 "Allowed" = "Allowed";
 "Allow…" = "Allow…";
 "Already allowed in macOS? Refresh the status or restart SnapPile." = "Already allowed in macOS? Refresh the status or restart SnapPile.";
+"Automatic updates are available only in signed releases." = "Automatic updates are available only in signed releases.";
 "Both Option keys" = "Both Option keys";
+"Cancel" = "Cancel";
 "Capture" = "Capture";
 "Capture Area" = "Capture Area";
 "Capture an area, then drag it\ndirectly into your AI chat." = "Capture an area, then drag it\ndirectly into your AI chat.";
@@ -28,7 +30,9 @@
 "Capture now. Share in seconds." = "Capture now. Share in seconds.";
 "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud." = "Captures are discarded automatically. Dragging creates a temporary PNG file. No account, no cloud.";
 "Captures without selection are turned off in SnapPile's Settings." = "Captures without selection are turned off in SnapPile's Settings.";
+"Check Now" = "Check Now";
 "Check permission status again" = "Check permission status again";
+"Checking for updates…" = "Checking for updates…";
 "Choose at least ⌘, ⌃, or ⌥." = "Choose at least ⌘, ⌃, or ⌥.";
 "Click a window  ·  Tap Space for area  ·  Esc to cancel" = "Click a window  ·  Tap Space for area  ·  Esc to cancel";
 "Close" = "Close";
@@ -42,6 +46,7 @@
 "Delete Automatically" = "Delete Automatically";
 "Delete Unpinned" = "Delete Unpinned";
 "Development" = "Development";
+"Downloading SnapPile %@…" = "Downloading SnapPile %@…";
 "Drag" = "Drag";
 "Drag the original image from here into your chat" = "Drag the original image from here into your chat";
 "EXAMPLE  /  SNAPPILE" = "EXAMPLE  /  SNAPPILE";
@@ -64,6 +69,9 @@
 "Inactive" = "Inactive";
 "Input Monitoring" = "Input Monitoring";
 "Input monitoring detects only the left and right Option modifiers. No text input is recorded." = "Input monitoring detects only the left and right Option modifiers. No text input is recorded.";
+"Install SnapPile %@ now?" = "Install SnapPile %@ now?";
+"Install Updates Automatically" = "Install Updates Automatically";
+"Install and Restart" = "Install and Restart";
 "Just for the moment." = "Just for the moment.";
 "Key" = "Key";
 "Key %u" = "Key %u";
@@ -89,6 +97,7 @@
 "Ready for the next prompt." = "Ready for the next prompt.";
 "Refresh Status" = "Refresh Status";
 "Refresh permission status" = "Refresh permission status";
+"Restarting discards all images in the pile, including pinned ones." = "Restarting discards all images in the pile, including pinned ones.";
 "Right" = "Right";
 "Room for your next thought." = "Room for your next thought.";
 "SCREENSHOT → PILE → AI CHAT" = "SCREENSHOT → PILE → AI CHAT";
@@ -114,6 +123,11 @@
 "Show Pile" = "Show Pile";
 "Show Pile (%ld)" = "Show Pile (%ld)";
 "Small details. Big impact." = "Small details. Big impact.";
+"SnapPile %@ is ready and installs when you quit." = "SnapPile %@ is ready and installs when you quit.";
+"SnapPile %@ is ready to install." = "SnapPile %@ is ready to install.";
+"SnapPile %@ is ready · Install and Restart" = "SnapPile %@ is ready · Install and Restart";
+"SnapPile %@ is up to date." = "SnapPile %@ is up to date.";
+"SnapPile cannot replace itself here. Move it to Applications or install the update manually." = "SnapPile cannot replace itself here. Move it to Applications or install the update manually.";
 "SnapPile did not answer the request." = "SnapPile did not answer the request.";
 "SnapPile is already capturing." = "SnapPile is already capturing.";
 "SnapPile is not running, or agent access is turned off in its Settings." = "SnapPile is not running, or agent access is turned off in its Settings.";
@@ -132,6 +146,7 @@
 "The agent socket could not be opened (errno %d)." = "The agent socket could not be opened (errno %d).";
 "The agent socket path is too long." = "The agent socket path is too long.";
 "The captured image could not be encoded as PNG." = "The captured image could not be encoded as PNG.";
+"The downloaded update is damaged." = "The downloaded update is damaged.";
 "The fallback shortcut %@ continues to work without this permission." = "The fallback shortcut %@ continues to work without this permission.";
 "The file is not a valid PNG image." = "The file is not a valid PNG image.";
 "The image cannot be captured because pinned screenshots use the available capacity." = "The image cannot be captured because pinned screenshots use the available capacity.";
@@ -143,6 +158,10 @@
 "The selected area is invalid." = "The selected area is invalid.";
 "The selected display is unavailable." = "The selected display is unavailable.";
 "The specified image dimensions are invalid or do not match the PNG." = "The specified image dimensions are invalid or do not match the PNG.";
+"The update does not contain the expected SnapPile version." = "The update does not contain the expected SnapPile version.";
+"The update is installed and starts next time." = "The update is installed and starts next time.";
+"The update is not signed by the SnapPile developer." = "The update is not signed by the SnapPile developer.";
+"The update's disk image could not be opened." = "The update's disk image could not be opened.";
 "The user cancelled the screenshot." = "The user cancelled the screenshot.";
 "The window is minimized or on another Space, so it has no current content." = "The window is minimized or on another Space, so it has no current content.";
 "The window is no longer open." = "The window is no longer open.";
@@ -150,6 +169,8 @@
 "This image is no longer in the pile." = "This image is no longer in the pile.";
 "This shortcut is already used by macOS." = "This shortcut is already used by macOS.";
 "Unpin" = "Unpin";
+"Updates" = "Updates";
+"Version %@" = "Version %@";
 "Welcome to SnapPile" = "Welcome to SnapPile";
 "Window of %@ captured for the agent" = "Window of %@ captured for the agent";
 "Window" = "Window";
