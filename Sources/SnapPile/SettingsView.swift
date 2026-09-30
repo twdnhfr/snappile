@@ -333,7 +333,7 @@ struct MenuPopoverView: View {
                     Button(L10n.text("Quit SnapPile")) { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis")
-                }.menuStyle(.borderlessButton).frame(width: 24)
+                }.menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 24)
             }.buttonStyle(.plain).font(.system(size: 11))
         }.padding(17).frame(width: 320).fixedSize(horizontal: false, vertical: true)
     }
